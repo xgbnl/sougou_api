@@ -50,14 +50,15 @@ final class UserRequest extends Validator implements Scene
     public function scenes(): array
     {
         return [
-            'index' => [],
+            'index' => ['perPage','page'],
         ];
     }
 
     public function pageRules(): array
     {
         return [
-            ''
+            'perPage' => 'required|integer|min:10',
+            'page' => 'required|integer|min:1',
         ];
     }
 }
