@@ -1,15 +1,17 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\UseCases\Contracts;
 
 use Illuminate\Contracts\Pagination\CursorPaginator;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
-use Illuminate\Database\Eloquent\Model;
 
-final readonly class LengthAwareOutPut implements OutPutPort
+final class LengthAwareOutPut implements OutPutPort
 {
+    use WithTransform;
 
-    public function __construct(final private(set) LengthAwarePaginator $paginator)
+    public function __construct(final readonly protected LengthAwarePaginator $paginator)
     {
     }
 
@@ -18,26 +20,11 @@ final readonly class LengthAwareOutPut implements OutPutPort
         return new LengthAwareOutPut($paginator);
     }
 
-    public function toViewData(?OutputData $ouPutData = null): array
+    public function toViewData(OutputData|\Closure|null $ouPutData = null): array
     {
-        $result = [
+        return [
             'total' => $this->paginator->total(),
+            'list' => $this->transform($ouPutData),
         ];
-
-        if (is_null($ouPutData)) {
-            $result['list'] = $this->paginator->items();
-            return $result;
-        }
-
-        $result['list'] = $this->paginator->getCollection()
-            ->transform(function (Model $model) use ($ouPutData): array {
-                $data = $ouPutData->toViewData($model);
-
-                $model = $model->makeHiddenIf(!empty($ouPutData->makeHidden()), $ouPutData->makeHidden());
-
-                return array_merge($model->toArray(), $data);
-            });
-
-        return $result;
     }
 }

@@ -13,6 +13,9 @@ return new class extends Migration
     {
         Schema::create('openapis', function (Blueprint $table) {
             $table->id();
+            $table->foreignId('user_id')->unique();
+            $table->string('userid',20)->unique()->comment('');
+            $table->string('name');
             $table->timestamps();
         });
     }

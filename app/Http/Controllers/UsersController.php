@@ -29,7 +29,7 @@ readonly final class UsersController
 
         $output = $this->useCase->findUserList($inputData);
 
-        return $output->toViewData(new UserOutputData());
+        return $output->makeHidden(['display_name',])->toViewData(new UserOutputData());
     }
 
     /**
