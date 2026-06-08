@@ -20,9 +20,6 @@
 /public/.user.ini
 /storage/*.key
 /storage/pail
-/storage/app
-/storage/framework
-/storage/logs
 /vendor
 Homestead.json
 Homestead.yaml
