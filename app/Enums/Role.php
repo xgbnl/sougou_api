@@ -10,7 +10,7 @@ use Elephant\Enums\Contacts\Enumerable;
 use Elephant\Enums\Traits\GetsAttributes;
 use Elephant\Enums\Traits\HasMethods;
 
-enum Role:string implements Enumerable, Presenter
+enum Role: string implements Enumerable, Presenter
 {
     use HasMethods, GetsAttributes;
 
@@ -19,4 +19,18 @@ enum Role:string implements Enumerable, Presenter
 
     #[Description('只读')]
     case VIEWER = 'viewer';
+
+    public function isAdmin(): bool
+    {
+        return $this === self::ADMIN;
+    }
+
+    public function abilities(): array
+    {
+        if ($this->isAdmin()) {
+            return ['*'];
+        }
+
+        return [self::VIEWER->value];
+    }
 }
