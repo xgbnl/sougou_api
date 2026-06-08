@@ -25,7 +25,8 @@ class DatabaseSeeder extends Seeder
 
         Model::unguard();
         $this->call([
-
+            UsersTableSeeder::class,
+            MarketingLeadsTableSeeder::class,
         ]);
         Model::reguard();
     }
