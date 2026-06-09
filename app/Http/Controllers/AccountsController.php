@@ -49,6 +49,7 @@ readonly final class AccountsController
     }
 
     /**
+     * 更新状态
      * @param int $id
      * @param AccountRequest $request
      * @return string
@@ -56,7 +57,7 @@ readonly final class AccountsController
      */
     public function update(int $id, AccountRequest $request): string
     {
-        $status = $request->validatedData('status');
+        $status = $request->withScene('editStatus')->validatedData('status');
 
         $this->useCase->editStatus($id, $status);
 
