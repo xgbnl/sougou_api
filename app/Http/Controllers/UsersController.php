@@ -5,7 +5,9 @@ declare(strict_types=1);
 namespace App\Http\Controllers;
 
 use App\Http\Requests\UserRequest;
+use App\Models\User;
 use App\UseCases\Interactor\UserInteractor;
+use Illuminate\Container\Attributes\CurrentUser;
 use Illuminate\Http\Request;
 use Throwable;
 
@@ -21,13 +23,13 @@ readonly final class UsersController
      * @param UserRequest $request
      * @return array
      */
-    public function index(UserRequest $request): array
+    public function index(UserRequest $request,#[CurrentUser]User $user): array
     {
         $inputData = $request->withScene('index')
             ->withRule('page')
             ->validatedData();
 
-        $output = $this->useCase->findUserList($inputData);
+        $output = $this->useCase->findUserList($user,$inputData);
 
         return $output->toViewData();
     }

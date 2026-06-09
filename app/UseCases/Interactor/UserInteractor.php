@@ -75,16 +75,18 @@ readonly final class UserInteractor
 
     /**
      * 获取用户列表
+     * @param User $user
      * @param array $inputData
      * @return OutPutPort
      */
-    public function findUserList(array $inputData): OutPutPort
+    public function findUserList(User $user, array $inputData): OutPutPort
     {
         $pages = User::query()
             ->select(['id', 'username', 'description', 'created_at'])
             ->when(!empty($inputData['username']), function (Builder|HigherOrderWhenProxy $query) use ($inputData): Builder|HigherOrderWhenProxy {
                 return $query->where('username', 'like', "%{$inputData['username']}%");
             })
+            ->whereNot('id', $user->id)
             ->orderByDesc('id')
             ->paginate(perPage: $inputData['perPage'], page: $inputData['page']);
 
@@ -106,7 +108,6 @@ readonly final class UserInteractor
 
         $selectedIds = $user->accounts()
             ->pluck('accounts.id')
-            ->map(fn($id) => (int)$id)
             ->all();
 
         $accounts = Account::query()

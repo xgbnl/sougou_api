@@ -19,8 +19,8 @@ Route::middleware('auth:sanctum')->group(function (): void {
     Route::get('dashboard/marketing-leads/stats', [MarketingLeadsController::class, 'stats']);
     // 用户管理
     Route::apiResource('users', UsersController::class)->only(['index', 'store']);
-    Route::get('users/{id}/accounts', [UsersController::class, 'accounts']);
-    Route::patch('users/{id}/accounts', [UsersController::class, 'syncAccounts']);
+    Route::get('users/{id}/accounts', [UsersController::class, 'accounts'])->where(['id' => '[0-9]+']);
+    Route::patch('users/{id}/accounts', [UsersController::class, 'syncAccounts'])->where(['id' => '[0-9]+']);
     // 账户管理
     Route::apiResource('accounts', AccountsController::class)->only(['index', 'store', 'update']);
     // 线索列表
