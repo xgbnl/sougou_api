@@ -183,7 +183,7 @@ class SyncMarketingLeadData extends Command
     private function insertMissingLeads(int $accountId, array $list): int
     {
         $leadIds = collect($list)
-            ->pluck('lead_id')
+            ->pluck('id')
             ->filter()
             ->map(fn($leadId) => (int)$leadId)
             ->unique()
@@ -207,7 +207,7 @@ class SyncMarketingLeadData extends Command
         $rows = [];
 
         foreach ($list as $lead) {
-            $leadId = (int)($lead['lead_id'] ?? 0);
+            $leadId = (int)($lead['id'] ?? 0);
             if ($leadId === 0 || !isset($missingLeadIds[$leadId])) {
                 continue;
             }
