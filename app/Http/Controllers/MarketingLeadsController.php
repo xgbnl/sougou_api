@@ -9,6 +9,7 @@ use App\Http\Requests\MarketingLeadRequest;
 use App\Models\User;
 use App\UseCases\Interactor\MarketingLeadInteractor;
 use Illuminate\Container\Attributes\CurrentUser;
+use Illuminate\Http\Request;
 
 readonly final class MarketingLeadsController
 {
@@ -23,7 +24,52 @@ readonly final class MarketingLeadsController
     {
         $output = $useCase->findMarketingLeadList($user, $request->validated());
 
-        return $output->makeHidden(['campaign_id', 'campaign_name', 'group_id', 'group_name', 'create_time'])
+        return $output->makeHidden([
+            'id',
+            'create_time',
+            'site_name',
+            'customer_name',
+            'customer_tel',
+            'ad_search_word',
+            'ad_keyword',
+        ])
             ->toViewData(new MarketingLeadOutputData());
+    }
+
+    /**
+     * 添加线索数据
+     * @param Request $request
+     * @param User $user
+     * @param MarketingLeadInteractor $useCase
+     * @return string
+     */
+    public function store(Request $request, #[CurrentUser] User $user, MarketingLeadInteractor $useCase): string
+    {
+        $inputData = $request->validate([
+            'createTime' => 'required|date',
+            'siteName' => 'required|string|max:255',
+            'customerName' => 'required|string|max:255',
+            'customerTel' => 'required|string|max:11',
+            'adSearchWord' => 'nullable|string|max:255',
+            'adKeyword' => 'nullable|string|max:255',
+        ]);
+
+        $inputData['adSearchWord'] ??= '';
+        $inputData['adKeyword'] ??= '';
+
+        $useCase->createMarketingLead($user, $inputData);
+
+        return '添加成功';
+    }
+
+    /**
+     * dashboard 线索统计
+     * @param User $user
+     * @param MarketingLeadInteractor $useCase
+     * @return array
+     */
+    public function stats(#[CurrentUser] User $user, MarketingLeadInteractor $useCase): array
+    {
+        return $useCase->dashboardStats($user);
     }
 }

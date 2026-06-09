@@ -2,7 +2,6 @@
 
 namespace Database\Factories;
 
-use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 class MarketingLeadFactory extends Factory
@@ -16,31 +15,24 @@ class MarketingLeadFactory extends Factory
     public function definition(): array
     {
         return [
-            'user_id' => User::factory(),
-
-            'campaign_id' => fake()->numberBetween(100000, 999999),
-            'campaign_name' => fake()->randomElement([
-                '品牌词推广计划',
-                '搜索获客计划',
-                '信息流转化计划',
-                '本地生活推广',
-                '线索收集计划',
-            ]),
-
-            'group_id' => fake()->numberBetween(100000, 999999),
-            'group_name' => fake()->randomElement([
-                '核心词推广组',
-                '长尾词推广组',
-                '移动端推广组',
-                '高意向人群组',
-                '再营销推广组',
-            ]),
-
-            'name' => fake()->name(),
-            'gender' => fake()->optional()->randomElement(['男', '女']),
-            'phone' => fake()->optional()->numerify('1##########'),
-
+            'account_id' => 1,
+            'lead_id' => fake()->unique()->numberBetween(1, 2999999999),
+            'customer_name' => fake()->name(),
+            'customer_tel' => fake()->numerify('1##########'),
+            'status' => 4,
+            'data_type' => 0,
+            'data_sub_type' => 0,
             'create_time' => fake()->dateTimeBetween('-30 days', 'now'),
+            'site_name' => fake()->randomElement(['品牌落地页', '搜索获客页', '本地生活页']),
+            'remark' => '',
+            'ad_trace_id' => fake()->uuid(),
+            'ad_source_type' => 0,
+            'ad_search_word' => fake()->word(),
+            'ad_keyword' => fake()->word(),
+            'ad_bannerid' => fake()->numberBetween(100000, 999999),
+            'ip_address' => fake()->ipv4(),
+            'more_info' => [],
+            'is_faker' => false,
         ];
     }
 }

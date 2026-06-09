@@ -13,11 +13,13 @@ readonly class MarketingLeadOutputData implements OutputData
     public function transform(Model|MarketingLead $model): array
     {
         return [
-            'campaignId' => $model->campaign_id,
-            'campaignName' => $model->campaign_name,
-            'groupId' => $model->group_id,
-            'groupName' => $model->group_name,
+            'id' => $model->id,
             'createTime' => $model->create_time,
+            'siteName' => $model->site_name,
+            'customerName' => $model->customer_name,
+            'customerTel' => $model->customer_tel,
+            'adSearchWord' => $model->ad_search_word,
+            'adKeyword' => $model->ad_keyword,
         ];
     }
 }

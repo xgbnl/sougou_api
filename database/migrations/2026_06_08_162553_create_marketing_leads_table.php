@@ -34,6 +34,7 @@ return new class extends Migration {
             $table->unsignedInteger('ad_bannerid')->comment('创意ID');
             $table->string('ip_address', 16)->comment('索线提交时的IP地址');
             $table->json('more_info')->comment('扩展信息');
+            $table->boolean('is_faker')->unsigned()->default(0)->comment('是否为伪造数据');
             $table->timestamps();
             $table->comment('广告线索表');
         });

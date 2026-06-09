@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Model;
 
 class MarketingLead extends Model
@@ -27,6 +28,7 @@ class MarketingLead extends Model
         'ad_bannerid',
         'ip_address',
         'more_info',
+        'is_faker',
     ];
 
     protected $hidden = [
@@ -38,6 +40,12 @@ class MarketingLead extends Model
         return [
             'create_time' => 'datetime',
             'more_info' => 'array',
+            'is_faker' => 'boolean',
         ];
+    }
+
+    public function account(): BelongsTo
+    {
+        return $this->belongsTo(Account::class);
     }
 }

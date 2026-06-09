@@ -6,6 +6,7 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\UserRequest;
 use App\UseCases\Interactor\UserInteractor;
+use Illuminate\Http\Request;
 use Throwable;
 
 readonly final class UsersController
@@ -39,5 +40,33 @@ readonly final class UsersController
         $this->useCase->createUser($request->validated());
 
         return '账户创建成功';
+    }
+
+    /**
+     * 用户线索账户分配数据
+     * @param int $id
+     * @return array
+     */
+    public function accounts(int $id): array
+    {
+        return $this->useCase->findUserAccounts($id);
+    }
+
+    /**
+     * 保存用户线索账户分配
+     * @param int $id
+     * @param Request $request
+     * @return string
+     */
+    public function syncAccounts(int $id, Request $request): string
+    {
+        $inputData = $request->validate([
+            'accountIds' => 'array',
+            'accountIds.*' => 'integer',
+        ]);
+
+        $this->useCase->syncUserAccounts($id, $inputData['accountIds'] ?? []);
+
+        return '分配成功';
     }
 }

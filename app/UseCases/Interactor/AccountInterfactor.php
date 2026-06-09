@@ -8,8 +8,10 @@ use App\Models\Account;
 use App\UseCases\Contracts\LengthAwareOutPut;
 use App\UseCases\Contracts\OutPutPort;
 use App\UseCases\Exceptions\UseCaseException;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\HigherOrderWhenProxy;
 use Throwable;
 
 readonly final class AccountInterfactor
@@ -47,6 +49,9 @@ readonly final class AccountInterfactor
     {
         $pages = Account::query()
             ->select(['id', 'username', 'e_id', 'userid', 'secret', 'status'])
+            ->when(isset($inputData['status']), function (Builder|HigherOrderWhenProxy $query) use ($inputData): Builder|HigherOrderWhenProxy {
+                return $query->where('status', $inputData['status']);
+            })
             ->orderByDesc('id')
             ->paginate(perPage: $inputData['perPage'], page: $inputData['page']);
 

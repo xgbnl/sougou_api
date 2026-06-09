@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace App\UseCases\Interactor;
 
 use App\Enums\Role;
+use App\Enums\Toggle;
+use App\Models\Account;
 use App\Models\User;
 use App\UseCases\Contracts\LengthAwareOutPut;
 use App\UseCases\Contracts\OutPutPort;
@@ -87,5 +89,66 @@ readonly final class UserInteractor
             ->paginate(perPage: $inputData['perPage'], page: $inputData['page']);
 
         return LengthAwareOutPut::pages($pages);
+    }
+
+    /**
+     * 获取用户可分配账户和已分配账户
+     * @param int $userId
+     * @return array
+     */
+    public function findUserAccounts(int $userId): array
+    {
+        $user = User::query()->find($userId);
+
+        if (empty($user)) {
+            throw new ModelNotFoundException('用户不存在');
+        }
+
+        $selectedIds = $user->accounts()
+            ->pluck('accounts.id')
+            ->map(fn($id) => (int)$id)
+            ->all();
+
+        $accounts = Account::query()
+            ->select(['id', 'username', 'e_id', 'userid'])
+            ->where('status', Toggle::ENABLED->value)
+            ->orderByDesc('id')
+            ->get()
+            ->map(fn(Account $account): array => [
+                'id' => $account->id,
+                'username' => $account->username,
+                'eId' => $account->e_id,
+                'userid' => $account->userid,
+            ])
+            ->all();
+
+        return [
+            'accounts' => $accounts,
+            'selectedIds' => $selectedIds,
+        ];
+    }
+
+    /**
+     * 保存用户线索账户分配
+     * @param int $userId
+     * @param array $accountIds
+     * @return void
+     */
+    public function syncUserAccounts(int $userId, array $accountIds): void
+    {
+        $user = User::query()->find($userId);
+
+        if (empty($user)) {
+            throw new ModelNotFoundException('用户不存在');
+        }
+
+        $enabledAccountIds = Account::query()
+            ->where('status', Toggle::ENABLED->value)
+            ->whereIn('id', $accountIds)
+            ->pluck('id')
+            ->map(fn($id) => (int)$id)
+            ->all();
+
+        $user->accounts()->sync($enabledAccountIds);
     }
 }
