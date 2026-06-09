@@ -15,8 +15,8 @@ class UsersTableSeeder extends Seeder
     {
         User::query()
             ->create([
-               'display_name' => 'Admin',
-               'username' => 'admin',
+                'description' => '管理员',
+                'username' => 'admin',
                 'password' => password_hash('Asdasd123+++', PASSWORD_DEFAULT),
             ]);
     }
