@@ -45,6 +45,22 @@ readonly final class UsersController
     }
 
     /**
+     * 更新密码
+     * @param int $id
+     * @param UserRequest $request
+     * @return string
+     */
+    public function update(int $id, UserRequest $request): string
+    {
+        $password = $request->withScene('update')
+            ->validatedData('password');
+
+        $this->useCase->resetPassword($id, $password);
+
+        return '修改成功';
+    }
+
+    /**
      * 用户线索账户分配数据
      * @param int $id
      * @return array

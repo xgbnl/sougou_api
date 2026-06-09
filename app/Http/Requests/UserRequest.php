@@ -32,6 +32,7 @@ final class UserRequest extends Validator implements Scene
             'description' => 'required',
             'username' => 'required|string|alpha',
             'password' => 'required|string|regex:/^[A-Za-z0-9_\-\+]+$/',
+            'passwordConfirmation' => 'required|string|same:password',
         ];
     }
 
@@ -41,6 +42,7 @@ final class UserRequest extends Validator implements Scene
             'description' => '账号描述',
             'username' => '账号',
             'password' => '密码',
+            'passwordConfirmation' => '确认密码',
         ];
     }
 
@@ -52,6 +54,7 @@ final class UserRequest extends Validator implements Scene
         return [
             'index' => ['perPage', 'page'],
             'sync' => ['accountIds'],
+            'update' => ['password', 'passwordConfirmation']
         ];
     }
 

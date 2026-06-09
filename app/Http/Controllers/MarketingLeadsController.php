@@ -10,6 +10,7 @@ use App\Models\User;
 use App\UseCases\Interactor\MarketingLeadInteractor;
 use Illuminate\Container\Attributes\CurrentUser;
 use Illuminate\Http\Request;
+use Symfony\Component\HttpFoundation\BinaryFileResponse;
 
 readonly final class MarketingLeadsController
 {
@@ -36,30 +37,30 @@ readonly final class MarketingLeadsController
             ->toViewData(new MarketingLeadOutputData());
     }
 
-    /**
-     * 添加线索数据
-     * @param Request $request
-     * @param User $user
-     * @param MarketingLeadInteractor $useCase
-     * @return string
-     */
-    public function store(Request $request, #[CurrentUser] User $user, MarketingLeadInteractor $useCase): string
+    public function import(Request $request, #[CurrentUser] User $user, MarketingLeadInteractor $useCase): string
     {
         $inputData = $request->validate([
-            'createTime' => 'required|date',
-            'siteName' => 'required|string|max:255',
-            'customerName' => 'required|string|max:255',
-            'customerTel' => 'required|string|max:11',
-            'adSearchWord' => 'nullable|string|max:255',
-            'adKeyword' => 'nullable|string|max:255',
+            'file' => 'required|file|mimes:xlsx,xls',
+            'accountIds' => 'required|array|min:1',
+            'accountIds.*' => 'integer',
         ]);
 
-        $inputData['adSearchWord'] ??= '';
-        $inputData['adKeyword'] ??= '';
+        $useCase->importMarketingLeads($user, $inputData['file'], $inputData['accountIds']);
 
-        $useCase->createMarketingLead($user, $inputData);
+        return '导入成功';
+    }
 
-        return '添加成功';
+    public function export(#[CurrentUser] User $user, MarketingLeadInteractor $useCase): BinaryFileResponse
+    {
+        $filePath = $useCase->exportMarketingLeads($user);
+
+        return response()
+            ->download(
+                $filePath,
+                '线索数据-' . date('YmdHis') . '.xlsx',
+                ['Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet']
+            )
+            ->deleteFileAfterSend();
     }
 
     /**

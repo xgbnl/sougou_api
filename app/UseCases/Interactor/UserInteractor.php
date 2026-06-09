@@ -152,4 +152,30 @@ readonly final class UserInteractor
 
         $user->accounts()->sync($enabledAccountIds);
     }
+
+    /**
+     * 重置密码
+     * @param int $id
+     * @param string $password
+     * @return void
+     */
+    public function resetPassword(int $id, string $password): void
+    {
+        $user = User::query()->find($id);
+
+        if (empty($user)) {
+            throw new ModelNotFoundException('用户不存在');
+        }
+
+        if (password_verify($password, $user->password)) {
+            throw new UseCaseException('新密码与旧密码一致');
+        }
+
+        User::query()
+            ->where('id', $id)
+            ->update([
+                'password' => password_hash($password, PASSWORD_DEFAULT),
+                'updated_at' => date('Y-m-d H:i:s'),
+            ]);
+    }
 }

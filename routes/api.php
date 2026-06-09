@@ -18,12 +18,13 @@ Route::middleware('auth:sanctum')->group(function (): void {
     // Dashboard
     Route::get('dashboard/marketing-leads/stats', [MarketingLeadsController::class, 'stats']);
     // 用户管理
-    Route::apiResource('users', UsersController::class)->only(['index', 'store']);
+    Route::apiResource('users', UsersController::class)->only(['index', 'store', 'update']);
     Route::get('users/{id}/accounts', [UsersController::class, 'accounts'])->where(['id' => '[0-9]+']);
     Route::patch('users/{id}/accounts', [UsersController::class, 'syncAccounts'])->where(['id' => '[0-9]+']);
     // 账户管理
     Route::apiResource('accounts', AccountsController::class)->only(['index', 'store', 'update']);
     // 线索列表
     Route::get('marketing-leads', [MarketingLeadsController::class, 'index']);
-    Route::post('marketing-leads', [MarketingLeadsController::class, 'store']);
+    Route::post('marketing-leads/import', [MarketingLeadsController::class, 'import']);
+    Route::get('marketing-leads/export', [MarketingLeadsController::class, 'export']);
 });
