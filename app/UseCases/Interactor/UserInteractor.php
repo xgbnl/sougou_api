@@ -147,8 +147,7 @@ readonly final class UserInteractor
             ->where('status', Toggle::ENABLED->value)
             ->whereIn('id', $accountIds)
             ->pluck('id')
-            ->map(fn($id) => (int)$id)
-            ->all();
+            ->toArray();
 
         $user->accounts()->sync($enabledAccountIds);
     }

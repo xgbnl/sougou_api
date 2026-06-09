@@ -50,7 +50,16 @@ final class UserRequest extends Validator implements Scene
     public function scenes(): array
     {
         return [
-            'index' => ['perPage','page'],
+            'index' => ['perPage', 'page'],
+            'sync' => ['accountIds'],
+        ];
+    }
+
+    public function syncAccountRules(): array
+    {
+        return [
+            'accountIds' => 'array',
+            'accountIds.*' => 'integer',
         ];
     }
 

@@ -8,7 +8,6 @@ use App\Http\Requests\UserRequest;
 use App\Models\User;
 use App\UseCases\Interactor\UserInteractor;
 use Illuminate\Container\Attributes\CurrentUser;
-use Illuminate\Http\Request;
 use Throwable;
 
 readonly final class UsersController
@@ -21,15 +20,16 @@ readonly final class UsersController
     /**
      * 用户列表
      * @param UserRequest $request
+     * @param User $user
      * @return array
      */
-    public function index(UserRequest $request,#[CurrentUser]User $user): array
+    public function index(UserRequest $request, #[CurrentUser] User $user): array
     {
         $inputData = $request->withScene('index')
             ->withRule('page')
             ->validatedData();
 
-        $output = $this->useCase->findUserList($user,$inputData);
+        $output = $this->useCase->findUserList($user, $inputData);
 
         return $output->toViewData();
     }
@@ -39,7 +39,7 @@ readonly final class UsersController
      */
     public function store(UserRequest $request): string
     {
-        $this->useCase->createUser($request->validated());
+        $this->useCase->createUser($request->validatedData());
 
         return '账户创建成功';
     }
@@ -57,15 +57,14 @@ readonly final class UsersController
     /**
      * 保存用户线索账户分配
      * @param int $id
-     * @param Request $request
+     * @param UserRequest $request
      * @return string
      */
-    public function syncAccounts(int $id, Request $request): string
+    public function syncAccounts(int $id, UserRequest $request): string
     {
-        $inputData = $request->validate([
-            'accountIds' => 'array',
-            'accountIds.*' => 'integer',
-        ]);
+        $inputData = $request->withScene('sync')
+            ->withRule('syncAccount')
+            ->validatedData();
 
         $this->useCase->syncUserAccounts($id, $inputData['accountIds'] ?? []);
 
