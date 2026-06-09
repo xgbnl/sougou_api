@@ -8,6 +8,7 @@ use App\Models\MarketingLead;
 use App\ThirdParty\Openapi;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Console\Command;
 use Throwable;
@@ -203,7 +204,6 @@ class SyncMarketingLeadData extends Command
             return 0;
         }
 
-        $now = now();
         $rows = [];
 
         foreach ($list as $lead) {
@@ -220,7 +220,7 @@ class SyncMarketingLeadData extends Command
                 'status' => (int)($lead['status'] ?? 0),
                 'data_type' => (int)($lead['data_type'] ?? 0),
                 'data_sub_type' => (int)($lead['data_sub_type'] ?? 0),
-                'create_time' => $lead['create_time'] ?? $now,
+                'create_time' => $lead['create_time'] ?? date('Y-m-d H:i:s'),
                 'site_name' => $lead['site_name'] ?? '',
                 'remark' => $lead['remark'] ?? '',
                 'ad_trace_id' => $lead['ad_trace_id'] ?? '',
@@ -230,8 +230,8 @@ class SyncMarketingLeadData extends Command
                 'ad_bannerid' => (int)($lead['ad_bannerid'] ?? 0),
                 'ip_address' => $lead['ip_address'] ?? '',
                 'more_info' => is_array($lead['more_info']) ? json_encode($lead['more_info'], JSON_UNESCAPED_UNICODE) : $lead['more_info'],
-                'created_at' => $now,
-                'updated_at' => $now,
+                'created_at' => date('Y-m-d H:i:s'),
+                'updated_at' => date('Y-m-d H:i:s'),
             ];
         }
 
@@ -239,7 +239,19 @@ class SyncMarketingLeadData extends Command
             return 0;
         }
 
-        return MarketingLead::query()->insertOrIgnore($rows);
+        try {
+            DB::beginTransaction();
+            MarketingLead::query()->insertOrIgnore($rows);
+            DB::commit();
+        } catch (Throwable $e) {
+            DB::rollBack();
+
+            Log::error('插入线索失败: ' . $e->getMessage());
+
+            return 0;
+        }
+
+        return 1;
     }
 
     private function dateRange(): array

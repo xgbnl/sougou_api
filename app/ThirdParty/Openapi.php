@@ -54,8 +54,8 @@ class Openapi
                 ->retry(3, 1000)
                 ->timeout(10) // 秒
                 ->post($this->serverUrl.$this->apiPath, [
-                    'dataType' => '0',
-                    'status' => 4,
+                    'dataType' => 0,
+//                    'status' => 4,
                     'startDate' => $startDate,
                     'endDate' => $endDate,
                     'pn' => $pn,
