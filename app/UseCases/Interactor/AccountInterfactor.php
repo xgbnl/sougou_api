@@ -46,7 +46,7 @@ readonly final class AccountInterfactor
     public function findAccountList(array $inputData): OutPutPort
     {
         $pages = Account::query()
-            ->select(['username', 'e_id', 'userid', 'secret', 'status'])
+            ->select(['id', 'username', 'e_id', 'userid', 'secret', 'status'])
             ->orderByDesc('id')
             ->paginate(perPage: $inputData['perPage'], page: $inputData['page']);
 
