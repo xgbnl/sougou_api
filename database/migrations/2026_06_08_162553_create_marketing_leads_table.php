@@ -26,7 +26,7 @@ return new class extends Migration {
             $table->string('site_name', 255)->comment('落地页名称');
             $table->string('remark')->comment('备注');
             $table->string('ad_trace_id', 255)->comment('广告“点击”ID');
-            $table->rawColumn('ad_source_type', '(TINYINT(1))')
+            $table->rawColumn('ad_source_type', 'TINYINT(1)')
                 ->unsigned()
                 ->comment('产品线(广告类型)');
             $table->string('ad_search_word', 255)->comment('搜索词');
