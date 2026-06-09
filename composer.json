@@ -13,7 +13,8 @@
         "xgbnl/enum": "dev-main",
         "xgbnl/response": "dev-main",
         "xgbnl/validation": "dev-main",
-        "ext-openssl": "*"
+        "ext-openssl": "*",
+        "ext-xlswriter": "*"
     },
     "require-dev": {
         "fakerphp/faker": "^1.23",
