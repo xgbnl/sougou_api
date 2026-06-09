@@ -9,5 +9,5 @@ Artisan::command('inspire', function () {
 })->purpose('Display an inspiring quote');
 
 Schedule::command('app:sync-marketing-lead-data')
-    ->everyFiveMinutes()
+    ->everyThirtySeconds()
     ->withoutOverlapping(10);
