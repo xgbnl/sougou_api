@@ -80,6 +80,6 @@ class Openapi
 
     protected function authorization(): string
     {
-        return 'Bearer ' . base64_encode($this->userid . ':' . $this->apiSecret);
+        return 'Basic ' . base64_encode($this->userid . ':' . $this->apiSecret);
     }
 }
