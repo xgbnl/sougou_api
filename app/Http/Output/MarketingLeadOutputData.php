@@ -14,7 +14,7 @@ readonly class MarketingLeadOutputData implements OutputData
     {
         return [
             'id' => $model->id,
-            'createTime' => $model->create_time,
+            'createTime' => $model->create_time->format('Y-m-d H:i:s'),
             'siteName' => $model->site_name,
             'customerName' => $model->customer_name,
             'customerTel' => $model->customer_tel,
