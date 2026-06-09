@@ -13,6 +13,7 @@ return new class extends Migration {
         Schema::create('marketing_leads', function (Blueprint $table) {
             $table->id();
             $table->foreignId('account_id')->index();
+            $table->foreignId('owner_id')->nullable()->index()->comment('线索所属用户ID');
             $table->unsignedInteger('lead_id')->unique()->comment('线索ID');
             $table->string('customer_name', 255)->comment('客户姓名');
             $table->string('customer_tel', 11)->comment('客户手机号');

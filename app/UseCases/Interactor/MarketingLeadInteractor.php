@@ -47,14 +47,13 @@ readonly final class MarketingLeadInteractor
             throw new UseCaseException('无导入权限');
         }
 
-        $enabledAccountIds = Account::query()
+        $accounts = Account::query()
             ->where('status', Toggle::ENABLED->value)
             ->whereIn('id', $accountIds)
-            ->pluck('id')
-            ->map(fn($id) => (int)$id)
-            ->all();
+            ->with(['users' => fn($query) => $query->select('users.id')->orderBy('users.id')])
+            ->get();
 
-        if (empty($enabledAccountIds)) {
+        if ($accounts->isEmpty()) {
             throw new UseCaseException('请选择可用的线索账户');
         }
 
@@ -68,13 +67,23 @@ readonly final class MarketingLeadInteractor
         $insertRows = [];
         $leadIds = [];
 
+        $ownerCursors = [];
+
         foreach ($rows as $row) {
-            foreach ($enabledAccountIds as $accountId) {
+            foreach ($accounts as $account) {
                 $leadId = $this->makeFakeLeadId($leadIds);
                 $leadIds[] = $leadId;
+                $accountId = (int)$account->id;
+                $ownerIds = $account->users
+                    ->pluck('id')
+                    ->map(fn($id) => (int)$id)
+                    ->values()
+                    ->all();
+                $ownerCursors[$accountId] ??= 0;
 
                 $insertRows[] = [
                     'account_id' => $accountId,
+                    'owner_id' => $this->nextOwnerId($ownerIds, $ownerCursors[$accountId]),
                     'lead_id' => $leadId,
                     'customer_name' => $row['customer_name'],
                     'customer_tel' => $row['customer_tel'],
@@ -172,7 +181,9 @@ readonly final class MarketingLeadInteractor
             return $query->whereRaw('1 = 0');
         }
 
-        return $query->whereIn('account_id', $accountIds);
+        return $query
+            ->whereIn('account_id', $accountIds)
+            ->where('owner_id', $user->id);
     }
 
     private function readImportRows(UploadedFile $file): array
@@ -246,6 +257,18 @@ readonly final class MarketingLeadInteractor
         }
 
         return $rows;
+    }
+
+    private function nextOwnerId(array $ownerIds, int &$ownerCursor): ?int
+    {
+        if (empty($ownerIds)) {
+            return null;
+        }
+
+        $ownerId = $ownerIds[$ownerCursor % count($ownerIds)];
+        $ownerCursor++;
+
+        return $ownerId;
     }
 
     private function makeFakeLeadId(array $except = []): int

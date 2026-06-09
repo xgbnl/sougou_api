@@ -8,7 +8,6 @@ use App\Models\MarketingLead;
 use App\ThirdParty\Openapi;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Cache;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Console\Command;
 use Throwable;
@@ -68,6 +67,7 @@ class SyncMarketingLeadData extends Command
             ];
 
             Account::query()
+                ->with(['users' => fn($query) => $query->select('users.id')->orderBy('users.id')])
                 ->where('status', Toggle::ENABLED->value)
                 ->orderBy('id')
                 ->chunkById(100, function ($accounts) use ($startDate, $endDate, $pageSize, &$summary): void {
@@ -110,6 +110,11 @@ class SyncMarketingLeadData extends Command
         $requests = 0;
         $received = 0;
         $inserted = 0;
+        $ownerIds = $account->users
+            ->pluck('id')
+            ->values()
+            ->all();
+        $ownerCursor = 0;
 
         try {
             $apiPath = (string)config('openapi.openapi_path');
@@ -155,7 +160,7 @@ class SyncMarketingLeadData extends Command
                 }
 
                 $received += count($list);
-                $inserted += $this->insertMissingLeads((int)$account->id, $list);
+                $inserted += $this->insertMissingLeads((int)$account->id, $list, $ownerIds, $ownerCursor);
 
                 $page++;
             } while (count($list) === $pageSize && (($page - 1) * $pageSize) < $total);
@@ -174,13 +179,14 @@ class SyncMarketingLeadData extends Command
             'requests' => $requests,
             'received' => $received,
             'inserted' => $inserted,
+            'owners' => count($ownerIds),
             'elapsed_seconds' => round(microtime(true) - $startedAt, 3),
         ]);
 
         return compact('requests', 'received', 'inserted');
     }
 
-    private function insertMissingLeads(int $accountId, array $list): int
+    private function insertMissingLeads(int $accountId, array $list, array $ownerIds, int &$ownerCursor): int
     {
         $leadIds = collect($list)
             ->pluck('id')
@@ -214,6 +220,7 @@ class SyncMarketingLeadData extends Command
 
             $rows[] = [
                 'account_id' => $accountId,
+                'owner_id' => $this->nextOwnerId($ownerIds, $ownerCursor),
                 'lead_id' => $leadId,
                 'customer_name' => $lead['customer_name'] ?? '',
                 'customer_tel' => $lead['customer_tel'] ?? '',
@@ -240,18 +247,24 @@ class SyncMarketingLeadData extends Command
         }
 
         try {
-            DB::beginTransaction();
-            MarketingLead::query()->insertOrIgnore($rows);
-            DB::commit();
+            return MarketingLead::query()->insertOrIgnore($rows);
         } catch (Throwable $e) {
-            DB::rollBack();
-
             Log::error('插入线索失败: ' . $e->getMessage());
 
             return 0;
         }
+    }
 
-        return 1;
+    private function nextOwnerId(array $ownerIds, int &$ownerCursor): ?int
+    {
+        if (empty($ownerIds)) {
+            return null;
+        }
+
+        $ownerId = $ownerIds[$ownerCursor % count($ownerIds)];
+        $ownerCursor++;
+
+        return $ownerId;
     }
 
     private function dateRange(): array

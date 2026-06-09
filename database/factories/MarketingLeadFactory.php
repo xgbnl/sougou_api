@@ -16,6 +16,7 @@ class MarketingLeadFactory extends Factory
     {
         return [
             'account_id' => 1,
+            'owner_id' => null,
             'lead_id' => fake()->unique()->numberBetween(1, 2999999999),
             'customer_name' => fake()->name(),
             'customer_tel' => fake()->numerify('1##########'),

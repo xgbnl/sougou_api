@@ -12,6 +12,7 @@ class MarketingLead extends Model
 
     protected $fillable = [
         'account_id',
+        'owner_id',
         'lead_id',
         'customer_name',
         'customer_tel',
@@ -47,5 +48,10 @@ class MarketingLead extends Model
     public function account(): BelongsTo
     {
         return $this->belongsTo(Account::class);
+    }
+
+    public function owner(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'owner_id');
     }
 }
