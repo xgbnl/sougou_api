@@ -79,9 +79,9 @@ readonly final class UserInteractor
     public function findUserList(array $inputData): OutPutPort
     {
         $pages = User::query()
-            ->select(['id', 'username', 'display_name', 'created_at'])
-            ->when(!empty($inputData['name']), function (Builder|HigherOrderWhenProxy $query) use ($inputData): Builder|HigherOrderWhenProxy {
-                return $query->where('display_name', 'like', "%{$inputData['name']}%");
+            ->select(['id', 'username', 'description', 'created_at'])
+            ->when(!empty($inputData['username']), function (Builder|HigherOrderWhenProxy $query) use ($inputData): Builder|HigherOrderWhenProxy {
+                return $query->where('username', 'like', "%{$inputData['username']}%");
             })
             ->orderByDesc('id')
             ->paginate(perPage: $inputData['perPage'], page: $inputData['page']);
