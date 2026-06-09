@@ -81,7 +81,7 @@ readonly final class MarketingLeadInteractor
                     'status' => 4,
                     'data_type' => 0,
                     'data_sub_type' => 0,
-                    'create_time' => $row['create_time'],
+                    'create_time' => date('Y-m-d H:i:s'),
                     'site_name' => $row['site_name'],
                     'remark' => '',
                     'ad_trace_id' => '',
@@ -105,7 +105,7 @@ readonly final class MarketingLeadInteractor
 
     public function exportMarketingLeads(User $user): string
     {
-        $headers = ['落地页名称', '客户姓名', '客户手机号', '搜索词', '关键词', '线索记录时间'];
+        $headers = ['落地页名称', '客户姓名', '客户手机号', '搜索词', '关键词'];
         $data = [];
         $tmpPath = storage_path('app/tmp');
 
@@ -126,7 +126,6 @@ readonly final class MarketingLeadInteractor
                     $lead->customer_tel,
                     $lead->ad_search_word,
                     $lead->ad_keyword,
-                    $lead->create_time?->format('Y-m-d H:i:s'),
                 ];
             }
         });
@@ -212,7 +211,6 @@ readonly final class MarketingLeadInteractor
             '客户手机号' => 'customer_tel',
             '搜索词' => 'ad_search_word',
             '关键词' => 'ad_keyword',
-            '线索记录时间' => 'create_time',
         ];
 
         foreach (array_keys($requiredHeaders) as $header) {
@@ -234,11 +232,10 @@ readonly final class MarketingLeadInteractor
                 continue;
             }
 
-            if (empty($row['create_time']) || empty($row['site_name']) || empty($row['customer_name']) || empty($row['customer_tel'])) {
+            if (empty($row['site_name']) || empty($row['customer_name']) || empty($row['customer_tel'])) {
                 throw new UseCaseException('导入文件存在必填字段为空的数据');
             }
 
-            $row['create_time'] = $this->normalizeImportDate($row['create_time']);
             $row['site_name'] = (string)$row['site_name'];
             $row['customer_name'] = (string)$row['customer_name'];
             $row['customer_tel'] = (string)$row['customer_tel'];
@@ -249,16 +246,6 @@ readonly final class MarketingLeadInteractor
         }
 
         return $rows;
-    }
-
-    private function normalizeImportDate(mixed $value): string
-    {
-        if (is_numeric($value)) {
-            return Carbon::createFromTimestampUTC(((float)$value - 25569) * 86400)
-                ->toDateTimeString();
-        }
-
-        return Carbon::parse((string)$value)->toDateTimeString();
     }
 
     private function makeFakeLeadId(array $except = []): int
