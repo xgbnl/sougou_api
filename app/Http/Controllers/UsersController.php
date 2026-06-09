@@ -31,7 +31,7 @@ readonly final class UsersController
 
         $output = $this->useCase->findUserList($user, $inputData);
 
-        return $output->toViewData();
+        return $output->toViewData(fn(User $user): array => ['createdAt' => $user->createdAt()]);
     }
 
     /**

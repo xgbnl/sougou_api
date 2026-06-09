@@ -5,6 +5,7 @@ namespace App\Models;
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
 use App\Enums\Role;
 use App\Traits\HasAccessToken;
+use App\Traits\TimestampSerialTrait;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
@@ -14,7 +15,7 @@ use Laravel\Sanctum\HasApiTokens;
 class User extends Authenticatable
 {
     /** @use HasFactory<\Database\Factories\UserFactory> */
-    use HasFactory, HasAccessToken, Notifiable, HasApiTokens;
+    use HasFactory, HasAccessToken, Notifiable, HasApiTokens, TimestampSerialTrait;
 
     /**
      * The attributes that are mass assignable.
