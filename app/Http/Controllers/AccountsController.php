@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers;
 
+use App\Http\Output\AccountOutputData;
 use App\Http\Requests\AccountRequest;
 use App\Models\Account;
 use App\UseCases\Interactor\AccountInterfactor;
@@ -29,10 +30,7 @@ readonly final class AccountsController
         $outPut = $this->useCase->findAccountList($inputData);
 
         return $outPut->makeHidden(['e_id'])
-            ->toViewData(fn(Account $account): array => [
-                'eId' => $account->e_id,
-                'status' => $account->status->toViewModel(),
-            ]);
+            ->toViewData(new AccountOutputData());
     }
 
     /**
