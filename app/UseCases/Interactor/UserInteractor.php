@@ -59,6 +59,7 @@ readonly final class UserInteractor
 
         $inputData['role'] = Role::VIEWER->value;
         $inputData['created_at'] = date('Y-m-d H:i:s');
+        $inputData['password'] = password_hash($inputData['password'], PASSWORD_DEFAULT);
 
         try {
             DB::beginTransaction();
