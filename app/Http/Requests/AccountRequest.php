@@ -32,7 +32,7 @@ final class AccountRequest extends Validator implements Scene
     {
         return [
             'username' => 'required|string',
-            'e_id' => 'required|string|max:10',
+            'eId' => 'required|string|max:10',
             'userid' => 'required|integer',
             'secret' => 'required|string|max:16',
             'status' => ['required', new Enum(Toggle::class)],
@@ -43,10 +43,17 @@ final class AccountRequest extends Validator implements Scene
     {
         return [
             'username' => '账号',
-            'e_id' => '点睛ID',
+            'eId' => '点睛ID',
             'userid' => 'UserId',
             'secret' => '密钥',
             'status' => '状态',
+        ];
+    }
+
+    public function aliases(): array
+    {
+        return [
+            'eId' => 'e_id',
         ];
     }
 
