@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers;
 
-use App\Http\Output\UserOutputData;
 use App\Http\Requests\UserRequest;
 use App\UseCases\Interactor\UserInteractor;
 use Throwable;
@@ -29,7 +28,7 @@ readonly final class UsersController
 
         $output = $this->useCase->findUserList($inputData);
 
-        return $output->makeHidden(['display_name',])->toViewData(new UserOutputData());
+        return $output->toViewData();
     }
 
     /**

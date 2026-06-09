@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\AccountsController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\MarketingLeadsController;
 use App\Http\Controllers\UsersController;
@@ -16,6 +17,8 @@ Route::middleware('auth:sanctum')->group(function (): void {
     Route::post('auth/logout', [AuthController::class, 'logout']);
     // 用户管理
     Route::apiResource('users', UsersController::class)->only(['index', 'store']);
+    // 账户管理
+    Route::apiResource('accounts', AccountsController::class)->only(['index', 'store', 'update']);
     // 线索列表
-    Route::get('marketing-leads',[MarketingLeadsController::class, 'index']);
+    Route::get('marketing-leads', [MarketingLeadsController::class, 'index']);
 });

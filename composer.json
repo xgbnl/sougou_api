@@ -12,7 +12,8 @@
         "laravel/tinker": "^2.10.1",
         "xgbnl/enum": "dev-main",
         "xgbnl/response": "dev-main",
-        "xgbnl/validation": "dev-main"
+        "xgbnl/validation": "dev-main",
+        "ext-openssl": "*"
     },
     "require-dev": {
         "fakerphp/faker": "^1.23",

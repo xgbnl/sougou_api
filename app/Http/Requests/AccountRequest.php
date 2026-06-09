@@ -4,12 +4,14 @@ declare(strict_types=1);
 
 namespace App\Http\Requests;
 
+use App\Enums\Toggle;
 use Elephant\Validation\Contacts\Validation\Scene;
 use Elephant\Validation\Validation\SceneTrait;
 use Elephant\Validation\Validation\Validator;
 use Illuminate\Contracts\Validation\Rule;
+use Illuminate\Validation\Rules\Enum;
 
-final class UserRequest extends Validator implements Scene
+final class AccountRequest extends Validator implements Scene
 {
     use SceneTrait;
 
@@ -29,18 +31,22 @@ final class UserRequest extends Validator implements Scene
     public function rules(): array
     {
         return [
-            'description' => 'required',
-            'username' => 'required|string|alpha',
-            'password' => 'required|string|regex:/^[A-Za-z0-9_\-\+]+$/',
+            'username' => 'required|string',
+            'e_id' => 'required|string|max:10',
+            'userid' => 'required|integer',
+            'secret' => 'required|string|max:16',
+            'status' => ['required', new Enum(Toggle::class)],
         ];
     }
 
     public function attributes(): array
     {
         return [
-            'description' => '账号描述',
             'username' => '账号',
-            'password' => '密码',
+            'e_id' => '点睛ID',
+            'userid' => 'UserId',
+            'secret' => '密钥',
+            'status' => '状态',
         ];
     }
 
@@ -50,7 +56,8 @@ final class UserRequest extends Validator implements Scene
     public function scenes(): array
     {
         return [
-            'index' => ['perPage','page'],
+            'index' => ['perPage', 'page'],
+            'editStatus' => 'status',
         ];
     }
 
@@ -59,6 +66,7 @@ final class UserRequest extends Validator implements Scene
         return [
             'perPage' => 'required|integer|min:10',
             'page' => 'required|integer|min:1',
+            'status' => ['nullable', new Enum(Toggle::class)],
         ];
     }
 }
