@@ -53,6 +53,7 @@ readonly final class UsersController
     public function update(int $id, UserRequest $request): string
     {
         $password = $request->withScene('update')
+            ->withRule('resetPassword')
             ->validatedData('password');
 
         $this->useCase->resetPassword($id, $password);

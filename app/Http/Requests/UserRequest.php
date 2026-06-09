@@ -32,7 +32,6 @@ final class UserRequest extends Validator implements Scene
             'description' => 'required',
             'username' => 'required|string|alpha',
             'password' => 'required|string|regex:/^[A-Za-z0-9_\-\+]+$/',
-            'passwordConfirmation' => 'required|string|same:password',
         ];
     }
 
@@ -55,6 +54,13 @@ final class UserRequest extends Validator implements Scene
             'index' => ['perPage', 'page'],
             'sync' => ['accountIds'],
             'update' => ['password', 'passwordConfirmation']
+        ];
+    }
+
+    public function resetPasswordRules(): array
+    {
+        return [
+            'passwordConfirmation' => 'required|string|same:password',
         ];
     }
 
