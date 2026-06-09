@@ -26,5 +26,6 @@ Route::middleware('auth:sanctum')->group(function (): void {
     // 线索列表
     Route::get('marketing-leads', [MarketingLeadsController::class, 'index']);
     Route::post('marketing-leads/import', [MarketingLeadsController::class, 'import']);
-    Route::get('marketing-leads/export', [MarketingLeadsController::class, 'export']);
+    Route::get('marketing-leads/export', [MarketingLeadsController::class, 'export'])
+        ->withoutMiddleware('body.advice');
 });
