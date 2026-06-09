@@ -59,6 +59,7 @@ final class UserRequest extends Validator implements Scene
         return [
             'perPage' => 'required|integer|min:10',
             'page' => 'required|integer|min:1',
+            'username' => 'nullable|string|alpha',
         ];
     }
 }
