@@ -6,7 +6,6 @@ namespace App\Http\Controllers;
 
 use App\Http\Output\AccountOutputData;
 use App\Http\Requests\AccountRequest;
-use App\Models\Account;
 use App\UseCases\Interactor\AccountInterfactor;
 use Throwable;
 

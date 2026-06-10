@@ -27,12 +27,12 @@ readonly final class MarketingLeadsController
 
         return $output->makeHidden([
             'id',
-            'create_time',
+            'clue_time',
             'site_name',
-            'customer_name',
-            'customer_tel',
-            'ad_search_word',
-            'ad_keyword',
+            'username',
+            'phone',
+            'search_word',
+            'keyword',
         ])
             ->toViewData(new MarketingLeadOutputData());
     }

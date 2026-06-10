@@ -2,6 +2,7 @@
 
 namespace App\Console\Commands;
 
+use App\Enums\AccountChannel;
 use App\Enums\Toggle;
 use App\Models\Account;
 use App\Models\MarketingLead;
@@ -68,6 +69,7 @@ class SyncMarketingLeadData extends Command
 
             Account::query()
                 ->with(['users' => fn($query) => $query->select('users.id')->orderBy('users.id')])
+                ->where('channel', AccountChannel::QI_HU->value)
                 ->where('status', Toggle::ENABLED->value)
                 ->orderBy('id')
                 ->chunkById(100, function ($accounts) use ($startDate, $endDate, $pageSize, &$summary): void {
@@ -191,7 +193,7 @@ class SyncMarketingLeadData extends Command
         $leadIds = collect($list)
             ->pluck('id')
             ->filter()
-            ->map(fn($leadId) => (int)$leadId)
+            ->map(fn($leadId) => (string)$leadId)
             ->unique()
             ->values();
 
@@ -200,9 +202,9 @@ class SyncMarketingLeadData extends Command
         }
 
         $existsLeadIds = MarketingLead::query()
-            ->whereIn('lead_id', $leadIds)
-            ->pluck('lead_id')
-            ->map(fn($leadId) => (int)$leadId)
+            ->whereIn('clue_id', $leadIds)
+            ->pluck('clue_id')
+            ->map(fn($leadId) => (string)$leadId)
             ->all();
 
         $missingLeadIds = array_flip(array_diff($leadIds->all(), $existsLeadIds));
@@ -213,30 +215,21 @@ class SyncMarketingLeadData extends Command
         $rows = [];
 
         foreach ($list as $lead) {
-            $leadId = (int)($lead['id'] ?? 0);
-            if ($leadId === 0 || !isset($missingLeadIds[$leadId])) {
+            $leadId = (string)($lead['id'] ?? '');
+            if ($leadId === '' || !isset($missingLeadIds[$leadId])) {
                 continue;
             }
 
             $rows[] = [
                 'account_id' => $accountId,
                 'owner_id' => $this->nextOwnerId($ownerIds, $ownerCursor),
-                'lead_id' => $leadId,
-                'customer_name' => $lead['customer_name'] ?? '',
-                'customer_tel' => $lead['customer_tel'] ?? '',
-                'status' => (int)($lead['status'] ?? 0),
-                'data_type' => (int)($lead['data_type'] ?? 0),
-                'data_sub_type' => (int)($lead['data_sub_type'] ?? 0),
-                'create_time' => $lead['create_time'] ?? date('Y-m-d H:i:s'),
+                'clue_id' => $leadId,
+                'username' => $lead['customer_name'] ?? '',
+                'phone' => $lead['customer_tel'] ?? '',
+                'keyword' => $lead['ad_keyword'] ?? '',
+                'search_word' => $lead['ad_search_word'] ?? '',
+                'clue_time' => $lead['create_time'] ?? date('Y-m-d H:i:s'),
                 'site_name' => $lead['site_name'] ?? '',
-                'remark' => $lead['remark'] ?? '',
-                'ad_trace_id' => $lead['ad_trace_id'] ?? '',
-                'ad_source_type' => (int)($lead['ad_source_type'] ?? 0),
-                'ad_search_word' => $lead['ad_search_word'] ?? '',
-                'ad_keyword' => $lead['ad_keyword'] ?? '',
-                'ad_bannerid' => (int)($lead['ad_bannerid'] ?? 0),
-                'ip_address' => $lead['ip_address'] ?? '',
-                'more_info' => is_array($lead['more_info']) ? json_encode($lead['more_info'], JSON_UNESCAPED_UNICODE) : $lead['more_info'],
                 'created_at' => date('Y-m-d H:i:s'),
                 'updated_at' => date('Y-m-d H:i:s'),
             ];

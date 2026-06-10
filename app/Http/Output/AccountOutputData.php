@@ -15,8 +15,9 @@ readonly final class AccountOutputData implements OutputData
     {
         return [
             'eId' => $model->e_id,
+            'channel' => $model->channel->toViewModel(),
             'status' => $model->status->toViewModel(),
-            'secret' => $this->maskKeepLast($model->secret),
+            'secret' => empty($model->secret) ? null : $this->maskKeepLast($model->secret),
         ];
     }
 

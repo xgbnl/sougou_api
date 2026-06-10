@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\AccountsController;
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\BaiduDeliveryController;
 use App\Http\Controllers\MarketingLeadsController;
 use App\Http\Controllers\UsersController;
 use Illuminate\Http\Request;
@@ -13,6 +14,7 @@ Route::get('/user', function (Request $request) {
 
 Route::post('auth/login', [AuthController::class, 'login']);
 
+Route::post('baidu/delivery',[BaiduDeliveryController::class,'handle']);
 Route::post('notifies/baidu', function (Request $request): void {
     \Illuminate\Support\Facades\Log::info('推送数据', [
         'data' => $request->all(),

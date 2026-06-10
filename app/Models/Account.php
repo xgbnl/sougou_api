@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Enums\AccountChannel;
 use App\Enums\Toggle;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -10,6 +11,7 @@ use Illuminate\Database\Eloquent\Model;
 class Account extends Model
 {
     protected $fillable = [
+        'channel',
         'username',
         'e_id',
         'userid',
@@ -20,6 +22,7 @@ class Account extends Model
     protected function casts(): array
     {
         return [
+            'channel' => AccountChannel::class,
             'status' => Toggle::class
         ];
     }

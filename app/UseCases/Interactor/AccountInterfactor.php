@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\UseCases\Interactor;
 
+use App\Enums\AccountChannel;
 use App\Models\Account;
 use App\UseCases\Contracts\LengthAwareOutPut;
 use App\UseCases\Contracts\OutPutPort;
@@ -25,6 +26,17 @@ readonly final class AccountInterfactor
     public function createAccount(array $inputData): void
     {
         $inputData['created_at'] = date('Y-m-d H:i:s');
+
+        if (($inputData['channel'] ?? null) === AccountChannel::BAIDU->value) {
+            $exists = Account::query()
+                ->where('channel', AccountChannel::BAIDU->value)
+                ->where('username', $inputData['username'])
+                ->exists();
+
+            if ($exists) {
+                throw new UseCaseException('百度账户名已存在');
+            }
+        }
 
         try {
             DB::beginTransaction();
@@ -48,9 +60,12 @@ readonly final class AccountInterfactor
     public function findAccountList(array $inputData): OutPutPort
     {
         $pages = Account::query()
-            ->select(['id', 'username', 'e_id', 'userid', 'secret', 'status'])
+            ->select(['id', 'channel', 'username', 'e_id', 'userid', 'secret', 'status'])
             ->when(isset($inputData['status']), function (Builder|HigherOrderWhenProxy $query) use ($inputData): Builder|HigherOrderWhenProxy {
                 return $query->where('status', $inputData['status']);
+            })
+            ->when(isset($inputData['channel']), function (Builder|HigherOrderWhenProxy $query) use ($inputData): Builder|HigherOrderWhenProxy {
+                return $query->where('channel', $inputData['channel']);
             })
             ->orderByDesc('id')
             ->paginate(perPage: $inputData['perPage'], page: $inputData['page']);

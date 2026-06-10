@@ -28,14 +28,14 @@ readonly final class MarketingLeadInteractor
     public function findMarketingLeadList(User $user, array $inputData): OutPutPort
     {
         $pages = MarketingLead::query()
-            ->select(['id', 'create_time', 'site_name', 'customer_name', 'customer_tel', 'ad_search_word', 'ad_keyword'])
+            ->select(['id', 'clue_time', 'site_name', 'username', 'phone', 'search_word', 'keyword'])
             ->when(!$user->role->isAdmin(), fn(Builder|HigherOrderWhenProxy $builder): Builder|HigherOrderWhenProxy => $this->scopeAssignedAccounts($builder, $user))
             ->when(
                 value: !empty($inputData['startDate']) && !empty($inputData['endDate']),
                 callback: function (Builder|HigherOrderWhenProxy $query) use ($inputData): Builder|HigherOrderWhenProxy {
-                    return $query->whereBetween('create_time', [$inputData['startDate'], $inputData['endDate']]);
+                    return $query->whereBetween('clue_time', [$inputData['startDate'], $inputData['endDate']]);
                 })
-            ->orderByDesc('create_time')
+            ->orderByDesc('clue_time')
             ->paginate(perPage: $inputData['perPage'], page: $inputData['page']);
 
         return LengthAwareOutPut::pages($pages);
@@ -84,22 +84,13 @@ readonly final class MarketingLeadInteractor
                 $insertRows[] = [
                     'account_id' => $accountId,
                     'owner_id' => $this->nextOwnerId($ownerIds, $ownerCursors[$accountId]),
-                    'lead_id' => $leadId,
-                    'customer_name' => $row['customer_name'],
-                    'customer_tel' => $row['customer_tel'],
-                    'status' => 4,
-                    'data_type' => 0,
-                    'data_sub_type' => 0,
-                    'create_time' => date('Y-m-d H:i:s'),
+                    'clue_id' => (string)$leadId,
+                    'username' => $row['username'],
+                    'phone' => $row['phone'],
+                    'keyword' => $row['keyword'],
+                    'search_word' => $row['search_word'],
+                    'clue_time' => date('Y-m-d H:i:s'),
                     'site_name' => $row['site_name'],
-                    'remark' => '',
-                    'ad_trace_id' => '',
-                    'ad_source_type' => 0,
-                    'ad_search_word' => $row['ad_search_word'],
-                    'ad_keyword' => $row['ad_keyword'],
-                    'ad_bannerid' => 0,
-                    'ip_address' => '0.0.0.0',
-                    'more_info' => json_encode([], JSON_UNESCAPED_UNICODE),
                     'is_faker' => 1,
                     'created_at' => $now,
                     'updated_at' => $now,
@@ -123,18 +114,18 @@ readonly final class MarketingLeadInteractor
         }
 
         $query = MarketingLead::query()
-            ->select(['id', 'create_time', 'site_name', 'customer_name', 'customer_tel', 'ad_search_word', 'ad_keyword'])
+            ->select(['id', 'clue_time', 'site_name', 'username', 'phone', 'search_word', 'keyword'])
             ->when(!$user->role->isAdmin(), fn(Builder|HigherOrderWhenProxy $builder): Builder|HigherOrderWhenProxy => $this->scopeAssignedAccounts($builder, $user))
-            ->orderByDesc('create_time');
+            ->orderByDesc('clue_time');
 
         $query->chunkById(1000, function ($leads) use (&$data): void {
             foreach ($leads as $lead) {
                 $data[] = [
                     $lead->site_name,
-                    $lead->customer_name,
-                    $lead->customer_tel,
-                    $lead->ad_search_word,
-                    $lead->ad_keyword,
+                    $lead->username,
+                    $lead->phone,
+                    $lead->search_word,
+                    $lead->keyword,
                 ];
             }
         });
@@ -162,7 +153,7 @@ readonly final class MarketingLeadInteractor
         return [
             'totalLeads' => (clone $query)->count(),
             'todayLeads' => (clone $query)
-                ->whereBetween('create_time', [
+                ->whereBetween('clue_time', [
                     Carbon::today()->startOfDay(),
                     Carbon::today()->endOfDay(),
                 ])
@@ -218,10 +209,10 @@ readonly final class MarketingLeadInteractor
         $headerMap = array_flip(array_map('trim', $sheetData[0]));
         $requiredHeaders = [
             '落地页名称' => 'site_name',
-            '客户姓名' => 'customer_name',
-            '客户手机号' => 'customer_tel',
-            '搜索词' => 'ad_search_word',
-            '关键词' => 'ad_keyword',
+            '客户姓名' => 'username',
+            '客户手机号' => 'phone',
+            '搜索词' => 'search_word',
+            '关键词' => 'keyword',
         ];
 
         foreach (array_keys($requiredHeaders) as $header) {
@@ -243,15 +234,15 @@ readonly final class MarketingLeadInteractor
                 continue;
             }
 
-            if (empty($row['site_name']) || empty($row['customer_name']) || empty($row['customer_tel'])) {
+            if (empty($row['site_name']) || empty($row['username']) || empty($row['phone'])) {
                 throw new UseCaseException('导入文件存在必填字段为空的数据');
             }
 
             $row['site_name'] = (string)$row['site_name'];
-            $row['customer_name'] = (string)$row['customer_name'];
-            $row['customer_tel'] = (string)$row['customer_tel'];
-            $row['ad_search_word'] = (string)$row['ad_search_word'];
-            $row['ad_keyword'] = (string)$row['ad_keyword'];
+            $row['username'] = (string)$row['username'];
+            $row['phone'] = (string)$row['phone'];
+            $row['search_word'] = (string)$row['search_word'];
+            $row['keyword'] = (string)$row['keyword'];
 
             $rows[] = $row;
         }
@@ -275,7 +266,7 @@ readonly final class MarketingLeadInteractor
     {
         do {
             $leadId = random_int(3000000000, 4294967295);
-        } while (in_array($leadId, $except, true) || MarketingLead::query()->where('lead_id', $leadId)->exists());
+        } while (in_array($leadId, $except, true) || MarketingLead::query()->where('clue_id', (string)$leadId)->exists());
 
         return $leadId;
     }

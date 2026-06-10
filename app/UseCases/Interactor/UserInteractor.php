@@ -112,12 +112,13 @@ readonly final class UserInteractor
             ->all();
 
         $accounts = Account::query()
-            ->select(['id', 'username', 'e_id', 'userid'])
+            ->select(['id', 'channel', 'username', 'e_id', 'userid'])
             ->where('status', Toggle::ENABLED->value)
             ->orderByDesc('id')
             ->get()
             ->map(fn(Account $account): array => [
                 'id' => $account->id,
+                'channel' => $account->channel->toViewModel(),
                 'username' => $account->username,
                 'eId' => $account->e_id,
                 'userid' => $account->userid,

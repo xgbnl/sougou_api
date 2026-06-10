@@ -13,22 +13,13 @@ class MarketingLead extends Model
     protected $fillable = [
         'account_id',
         'owner_id',
-        'lead_id',
-        'customer_name',
-        'customer_tel',
-        'status',
-        'data_type',
-        'data_sub_type',
-        'create_time',
+        'clue_id',
+        'username',
+        'phone',
+        'keyword',
+        'search_word',
+        'clue_time',
         'site_name',
-        'remark',
-        'ad_trace_id',
-        'ad_source_type',
-        'ad_search_word',
-        'ad_keyword',
-        'ad_bannerid',
-        'ip_address',
-        'more_info',
         'is_faker',
     ];
 
@@ -39,8 +30,7 @@ class MarketingLead extends Model
     protected function casts(): array
     {
         return [
-            'create_time' => 'datetime',
-            'more_info' => 'array',
+            'clue_time' => 'datetime',
             'is_faker' => 'boolean',
         ];
     }

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Requests;
 
+use App\Enums\AccountChannel;
 use App\Enums\Toggle;
 use Elephant\Validation\Contacts\Validation\Scene;
 use Elephant\Validation\Validation\SceneTrait;
@@ -31,10 +32,11 @@ final class AccountRequest extends Validator implements Scene
     public function rules(): array
     {
         return [
+            'channel' => ['required', new Enum(AccountChannel::class)],
             'username' => 'required|string',
-            'eId' => 'required|string|max:10',
-            'userid' => 'required|integer',
-            'secret' => 'required|string|max:16',
+            'eId' => 'nullable|required_if:channel,' . AccountChannel::QI_HU->value . '|string|max:10',
+            'userid' => 'nullable|required_if:channel,' . AccountChannel::QI_HU->value . '|integer',
+            'secret' => 'nullable|required_if:channel,' . AccountChannel::QI_HU->value . '|string|max:16',
             'status' => ['required', new Enum(Toggle::class)],
         ];
     }
@@ -42,6 +44,7 @@ final class AccountRequest extends Validator implements Scene
     public function attributes(): array
     {
         return [
+            'channel' => '账户渠道',
             'username' => '账号',
             'eId' => '点睛ID',
             'userid' => 'UserId',
@@ -74,6 +77,7 @@ final class AccountRequest extends Validator implements Scene
             'perPage' => 'required|integer|min:10',
             'page' => 'required|integer|min:1',
             'status' => ['nullable', new Enum(Toggle::class)],
+            'channel' => ['nullable', new Enum(AccountChannel::class)],
         ];
     }
 }

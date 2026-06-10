@@ -14,12 +14,12 @@ readonly class MarketingLeadOutputData implements OutputData
     {
         return [
             'id' => $model->id,
-            'createTime' => $model->create_time->format('Y-m-d H:i:s'),
+            'clueTime' => $model->clue_time->format('Y-m-d H:i:s'),
             'siteName' => $model->site_name,
-            'customerName' => $model->customer_name,
-            'customerTel' => $model->customer_tel,
-            'adSearchWord' => $model->ad_search_word,
-            'adKeyword' => $model->ad_keyword,
+            'username' => $model->username,
+            'phone' => $model->phone,
+            'searchWord' => $model->search_word,
+            'keyword' => $model->keyword,
         ];
     }
 }
