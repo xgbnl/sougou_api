@@ -44,7 +44,6 @@ readonly final class DeliveryMessage
         $account = $this->nextAccount($accounts);
         $ownerIds = $account->users
             ->pluck('id')
-            ->map(fn($id) => (int)$id)
             ->values()
             ->all();
 
