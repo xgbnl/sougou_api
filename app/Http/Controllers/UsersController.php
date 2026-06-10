@@ -62,6 +62,20 @@ readonly final class UsersController
     }
 
     /**
+     * 删除用户
+     * @param int $id
+     * @param User $user
+     * @return string
+     * @throws Throwable
+     */
+    public function destroy(int $id, #[CurrentUser] User $user): string
+    {
+        $this->useCase->deleteUser($id, (int)$user->id);
+
+        return '删除成功';
+    }
+
+    /**
      * 用户线索账户分配数据
      * @param int $id
      * @return array

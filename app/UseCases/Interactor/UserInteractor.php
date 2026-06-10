@@ -7,6 +7,7 @@ namespace App\UseCases\Interactor;
 use App\Enums\Role;
 use App\Enums\Toggle;
 use App\Models\Account;
+use App\Models\MarketingLead;
 use App\Models\User;
 use App\UseCases\Contracts\LengthAwareOutPut;
 use App\UseCases\Contracts\OutPutPort;
@@ -178,5 +179,44 @@ readonly final class UserInteractor
                 'password' => password_hash($password, PASSWORD_DEFAULT),
                 'updated_at' => date('Y-m-d H:i:s'),
             ]);
+    }
+
+    /**
+     * 删除用户
+     * @param int $id
+     * @param int $currentUserId
+     * @return void
+     * @throws Throwable
+     */
+    public function deleteUser(int $id, int $currentUserId): void
+    {
+        if ($id === $currentUserId) {
+            throw new UseCaseException('不能删除当前登录用户');
+        }
+
+        $user = User::query()->find($id);
+
+        if (empty($user)) {
+            throw new ModelNotFoundException('用户不存在');
+        }
+
+        try {
+            DB::beginTransaction();
+
+            $user->accounts()->detach();
+            $user->tokens()->delete();
+            MarketingLead::query()
+                ->where('owner_id', $id)
+                ->update(['owner_id' => null]);
+            $user->delete();
+
+            DB::commit();
+        } catch (Throwable $e) {
+            DB::rollBack();
+
+            Log::error('删除用户失败: ' . $e->getMessage());
+
+            throw new UseCaseException('删除失败，请联系管理员');
+        }
     }
 }
