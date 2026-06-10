@@ -95,9 +95,9 @@ readonly final class DeliveryMessage
 
     private function nextAccount(Collection $accounts): Account
     {
-        $cursor = Cache::increment('baidu-delivery-account-cursor') - 1;
+        $cursor = $this->nextCursor('baidu-delivery-account-cursor');
 
-        return $accounts->values()->get($cursor % $accounts->count());
+        return $accounts->values()->get($cursor % $accounts->count(), $accounts->first());
     }
 
     private function nextOwnerId(int $accountId, array $ownerIds): ?int
@@ -106,8 +106,23 @@ readonly final class DeliveryMessage
             return null;
         }
 
-        $cursor = Cache::increment("baidu-delivery-account-{$accountId}-owner-cursor") - 1;
+        $cursor = $this->nextCursor("baidu-delivery-account-{$accountId}-owner-cursor");
 
         return $ownerIds[$cursor % count($ownerIds)];
+    }
+
+    private function nextCursor(string $key): int
+    {
+        Cache::add($key, 0);
+
+        $cursor = Cache::increment($key);
+
+        if (!is_int($cursor) || $cursor < 1) {
+            Cache::put($key, 1);
+
+            return 0;
+        }
+
+        return $cursor - 1;
     }
 }
