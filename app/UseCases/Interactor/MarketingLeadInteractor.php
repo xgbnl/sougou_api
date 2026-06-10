@@ -90,7 +90,7 @@ readonly final class MarketingLeadInteractor
                     'keyword' => $row['keyword'],
                     'search_word' => $row['search_word'],
                     'clue_time' => date('Y-m-d H:i:s'),
-                    'site_name' => $row['site_name'],
+                    'site_name' => '',
                     'is_faker' => 1,
                     'created_at' => $now,
                     'updated_at' => $now,
@@ -105,7 +105,7 @@ readonly final class MarketingLeadInteractor
 
     public function exportMarketingLeads(User $user): string
     {
-        $headers = ['落地页名称', '客户姓名', '客户手机号', '搜索词', '关键词'];
+        $headers = ['客户姓名', '客户手机号', '搜索词', '关键词'];
         $data = [];
         $tmpPath = storage_path('app/tmp');
 
@@ -114,14 +114,13 @@ readonly final class MarketingLeadInteractor
         }
 
         $query = MarketingLead::query()
-            ->select(['id', 'clue_time', 'site_name', 'username', 'phone', 'search_word', 'keyword'])
+            ->select(['id', 'clue_time', 'username', 'phone', 'search_word', 'keyword'])
             ->when(!$user->role->isAdmin(), fn(Builder|HigherOrderWhenProxy $builder): Builder|HigherOrderWhenProxy => $this->scopeAssignedAccounts($builder, $user))
             ->orderByDesc('clue_time');
 
         $query->chunkById(1000, function ($leads) use (&$data): void {
             foreach ($leads as $lead) {
                 $data[] = [
-                    $lead->site_name,
                     $lead->username,
                     $lead->phone,
                     $lead->search_word,
@@ -208,7 +207,6 @@ readonly final class MarketingLeadInteractor
 
         $headerMap = array_flip(array_map('trim', $sheetData[0]));
         $requiredHeaders = [
-            '落地页名称' => 'site_name',
             '客户姓名' => 'username',
             '客户手机号' => 'phone',
             '搜索词' => 'search_word',
@@ -234,11 +232,10 @@ readonly final class MarketingLeadInteractor
                 continue;
             }
 
-            if (empty($row['site_name']) || empty($row['username']) || empty($row['phone'])) {
+            if (empty($row['username']) || empty($row['phone'])) {
                 throw new UseCaseException('导入文件存在必填字段为空的数据');
             }
 
-            $row['site_name'] = (string)$row['site_name'];
             $row['username'] = (string)$row['username'];
             $row['phone'] = (string)$row['phone'];
             $row['search_word'] = (string)$row['search_word'];

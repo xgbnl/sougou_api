@@ -15,7 +15,6 @@ readonly class MarketingLeadOutputData implements OutputData
         return [
             'id' => $model->id,
             'clueTime' => $model->clue_time->format('Y-m-d H:i:s'),
-            'siteName' => $model->site_name,
             'username' => $model->username,
             'phone' => $model->phone,
             'searchWord' => $model->search_word,
