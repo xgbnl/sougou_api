@@ -13,6 +13,13 @@ Route::get('/user', function (Request $request) {
 
 Route::post('auth/login', [AuthController::class, 'login']);
 
+Route::post('notifies/baidu', function (Request $request): void {
+    \Illuminate\Support\Facades\Log::info('推送数据', [
+        'data' => $request->all(),
+        'headers' => $request->headers->all()
+    ]);
+});
+
 Route::middleware('auth:sanctum')->group(function (): void {
     Route::post('auth/logout', [AuthController::class, 'logout']);
     // Dashboard
