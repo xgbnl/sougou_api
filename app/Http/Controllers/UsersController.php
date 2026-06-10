@@ -8,6 +8,7 @@ use App\Http\Requests\UserRequest;
 use App\Models\User;
 use App\UseCases\Interactor\UserInteractor;
 use Illuminate\Container\Attributes\CurrentUser;
+use Illuminate\Http\Request;
 use Throwable;
 
 readonly final class UsersController
@@ -63,14 +64,14 @@ readonly final class UsersController
 
     /**
      * 删除用户
-     * @param int $id
      * @param User $user
+     * @param Request $request
      * @return string
      * @throws Throwable
      */
-    public function destroy(int $id, #[CurrentUser] User $user): string
+    public function destroy(User $user, Request $request): string
     {
-        $this->useCase->deleteUser($id, (int)$user->id);
+        $this->useCase->deleteUser((int)$user->id, (int)$request->user()->id);
 
         return '删除成功';
     }
