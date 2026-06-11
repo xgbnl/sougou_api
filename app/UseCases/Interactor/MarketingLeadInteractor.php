@@ -162,18 +162,7 @@ readonly final class MarketingLeadInteractor
 
     private function scopeAssignedAccounts(Builder|HigherOrderWhenProxy $query, User $user): Builder|HigherOrderWhenProxy
     {
-        $accountIds = $user->accounts()
-            ->where('accounts.status', Toggle::ENABLED->value)
-            ->pluck('accounts.id')
-            ->all();
-
-        if (empty($accountIds)) {
-            return $query->whereRaw('1 = 0');
-        }
-
-        return $query
-            ->whereIn('account_id', $accountIds)
-            ->where('owner_id', $user->id);
+        return $query->where('owner_id', $user->id);
     }
 
     private function readImportRows(UploadedFile $file): array
