@@ -40,7 +40,6 @@ readonly final class MarketingLeadInteractor
                     ]);
                 })
             ->orderByDesc('clue_time')
-            ->toRawSql()
             ->paginate(perPage: $inputData['perPage'], page: $inputData['page']);
 
         return LengthAwareOutPut::pages($pages);
