@@ -41,6 +41,15 @@ readonly final class DeliveryMessage
             return true;
         }
 
+        if ($this->shouldSkip((string)($message['username'] ?? ''))) {
+            Log::info('百度线索推送命中过滤词，跳过入库', [
+                'clue_id' => $clueId,
+                'username' => $message['username'] ?? '',
+            ]);
+
+            return true;
+        }
+
         $account = $this->nextAccount($accounts);
         $ownerIds = $account->users
             ->pluck('id')
@@ -80,6 +89,25 @@ readonly final class DeliveryMessage
         return $configuredSign !== ''
             && isset($message['sign'])
             && hash_equals($configuredSign, (string)$message['sign']);
+    }
+
+    private function shouldSkip(string $username): bool
+    {
+        $filterWords = config('openapi.filter_words', config('openapi.filter_keywords', []));
+
+        if (!is_array($filterWords) || $username === '') {
+            return false;
+        }
+
+        foreach ($filterWords as $word) {
+            $word = trim((string)$word);
+
+            if ($word !== '' && str_contains($username, $word)) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     private function enabledAccounts(): Collection

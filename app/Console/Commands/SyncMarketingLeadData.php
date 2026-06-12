@@ -220,6 +220,16 @@ class SyncMarketingLeadData extends Command
                 continue;
             }
 
+            if ($this->shouldSkip((string)($lead['customer_name'] ?? ''))) {
+                Log::info('推广线索命中过滤词，跳过入库', [
+                    'account_id' => $accountId,
+                    'clue_id' => $leadId,
+                    'customer_name' => $lead['customer_name'] ?? '',
+                ]);
+
+                continue;
+            }
+
             $rows[] = [
                 'account_id' => $accountId,
                 'owner_id' => $this->nextOwnerId($ownerIds, $ownerCursor),
@@ -246,6 +256,25 @@ class SyncMarketingLeadData extends Command
 
             return 0;
         }
+    }
+
+    private function shouldSkip(string $customerName): bool
+    {
+        $filterWords = config('openapi.filter_words', config('openapi.filter_keywords', []));
+
+        if (!is_array($filterWords) || $customerName === '') {
+            return false;
+        }
+
+        foreach ($filterWords as $word) {
+            $word = trim((string)$word);
+
+            if ($word !== '' && str_contains($customerName, $word)) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     private function nextOwnerId(array $ownerIds, int &$ownerCursor): ?int
