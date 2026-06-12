@@ -20,7 +20,7 @@ readonly class MarketingLeadOutputData implements OutputData
     {
         return [
             'id' => $model->id,
-            'channel' => $this->role->isAdmin() ? AccountChannel::from($model->account->channel) : '',
+            'channel' => $this->role->isAdmin() ? $model->account->channel->toViewModel() : '',
             'clueTime' => $model->clue_time->format('Y-m-d H:i:s'),
             'username' => $model->username,
             'phone' => $model->phone,
