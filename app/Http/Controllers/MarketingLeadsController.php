@@ -63,6 +63,13 @@ readonly final class MarketingLeadsController
             ->deleteFileAfterSend();
     }
 
+    public function destroy(int $id, #[CurrentUser] User $user, MarketingLeadInteractor $useCase): string
+    {
+        $useCase->deleteMarketingLead($id, $user);
+
+        return '删除成功';
+    }
+
     /**
      * dashboard 线索统计
      * @param User $user

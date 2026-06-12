@@ -11,6 +11,7 @@ use App\Models\User;
 use App\UseCases\Contracts\LengthAwareOutPut;
 use App\UseCases\Contracts\OutPutPort;
 use App\UseCases\Exceptions\UseCaseException;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Support\Carbon;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\UploadedFile;
@@ -138,6 +139,23 @@ readonly final class MarketingLeadInteractor
             ->header($headers)
             ->data($data)
             ->output();
+    }
+
+    public function deleteMarketingLead(int $id, User $user): void
+    {
+        if (!$user->role->isAdmin()) {
+            throw new UseCaseException('无删除权限');
+        }
+
+        $lead = MarketingLead::query()->find($id);
+
+        if (empty($lead)) {
+            throw new ModelNotFoundException('线索不存在');
+        }
+
+        if (!$lead->delete()) {
+            throw new UseCaseException('删除失败，请联系管理员');
+        }
     }
 
     /**
