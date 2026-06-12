@@ -25,8 +25,8 @@ class MarketingLeadRequest extends FormRequest
         return [
             'perPage' => 'required|integer|min:10',
             'page' => 'required|integer|min:1',
-            'startDate' => 'nullable|date:Y-m-d H:i:s',
-            'endDate' => 'nullable|date:Y-m-d H:i:s',
+            'startDate' => 'nullable|date:Y-m-d',
+            'endDate' => 'nullable|date:Y-m-d',
         ];
     }
 }
