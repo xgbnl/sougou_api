@@ -28,14 +28,19 @@ readonly final class MarketingLeadInteractor
     public function findMarketingLeadList(User $user, array $inputData): OutPutPort
     {
         $pages = MarketingLead::query()
-            ->select(['id', 'clue_time', 'site_name', 'username', 'phone', 'search_word', 'keyword'])
+            ->select(['id', 'clue_time', 'site_name', 'username', 'phone', 'search_word', 'keyword', 'account_id'])
+            ->with(['account:id,channel'])
             ->when(!$user->role->isAdmin(), fn(Builder|HigherOrderWhenProxy $builder): Builder|HigherOrderWhenProxy => $this->scopeAssignedAccounts($builder, $user))
             ->when(
                 value: !empty($inputData['startDate']) && !empty($inputData['endDate']),
                 callback: function (Builder|HigherOrderWhenProxy $query) use ($inputData): Builder|HigherOrderWhenProxy {
-                    return $query->whereBetween('clue_time', [$inputData['startDate'], $inputData['endDate']]);
+                    return $query->whereBetween('clue_time', [
+                        Carbon::parse($inputData['startDate'])->startOfDay(),
+                        Carbon::parse($inputData['endDate'])->addDay()->startOfDay()
+                    ]);
                 })
             ->orderByDesc('clue_time')
+            ->toRawSql()
             ->paginate(perPage: $inputData['perPage'], page: $inputData['page']);
 
         return LengthAwareOutPut::pages($pages);

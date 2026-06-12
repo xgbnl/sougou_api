@@ -4,16 +4,23 @@ declare(strict_types=1);
 
 namespace App\Http\Output;
 
+use App\Enums\AccountChannel;
+use App\Enums\Role;
 use App\Models\MarketingLead;
 use App\UseCases\Contracts\OutputData;
 use Illuminate\Database\Eloquent\Model;
 
 readonly class MarketingLeadOutputData implements OutputData
 {
+    public function __construct(protected Role $role)
+    {
+    }
+
     public function transform(Model|MarketingLead $model): array
     {
         return [
             'id' => $model->id,
+            'channel' => $this->role->isAdmin() ? AccountChannel::from($model->account->channel) : '',
             'clueTime' => $model->clue_time->format('Y-m-d H:i:s'),
             'username' => $model->username,
             'phone' => $model->phone,

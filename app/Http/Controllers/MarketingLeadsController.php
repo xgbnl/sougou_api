@@ -34,7 +34,7 @@ readonly final class MarketingLeadsController
             'search_word',
             'keyword',
         ])
-            ->toViewData(new MarketingLeadOutputData());
+            ->toViewData(new MarketingLeadOutputData($user->role));
     }
 
     public function import(Request $request, #[CurrentUser] User $user, MarketingLeadInteractor $useCase): string
