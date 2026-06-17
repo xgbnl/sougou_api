@@ -230,6 +230,16 @@ class SyncMarketingLeadData extends Command
                 continue;
             }
 
+            if ($this->shouldSkipPhone((string)($lead['customer_tel'] ?? ''))) {
+                Log::info('推广线索命中过滤手机号，跳过入库', [
+                    'account_id' => $accountId,
+                    'clue_id' => $leadId,
+                    'customer_tel' => $lead['customer_tel'] ?? '',
+                ]);
+
+                continue;
+            }
+
             $rows[] = [
                 'account_id' => $accountId,
                 'owner_id' => $this->nextOwnerId($ownerIds, $ownerCursor),
@@ -270,6 +280,24 @@ class SyncMarketingLeadData extends Command
             $word = trim((string)$word);
 
             if ($word !== '' && str_contains($customerName, $word)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private function shouldSkipPhone(string $phone): bool
+    {
+        $filterPhones = config('openapi.filter_phone', []);
+        $phone = trim($phone);
+
+        if (!is_array($filterPhones) || $phone === '') {
+            return false;
+        }
+
+        foreach ($filterPhones as $filterPhone) {
+            if ($phone === trim((string)$filterPhone)) {
                 return true;
             }
         }

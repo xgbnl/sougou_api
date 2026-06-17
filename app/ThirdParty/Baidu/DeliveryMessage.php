@@ -50,6 +50,15 @@ readonly final class DeliveryMessage
             return true;
         }
 
+        if ($this->shouldSkipPhone((string)($message['phone'] ?? ''))) {
+            Log::info('百度线索推送命中过滤手机号，跳过入库', [
+                'clue_id' => $clueId,
+                'phone' => $message['phone'] ?? '',
+            ]);
+
+            return true;
+        }
+
         $account = $this->nextAccount($accounts);
         $ownerIds = $account->users
             ->pluck('id')
@@ -103,6 +112,24 @@ readonly final class DeliveryMessage
             $word = trim((string)$word);
 
             if ($word !== '' && str_contains($username, $word)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private function shouldSkipPhone(string $phone): bool
+    {
+        $filterPhones = config('openapi.filter_phone', []);
+        $phone = trim($phone);
+
+        if (!is_array($filterPhones) || $phone === '') {
+            return false;
+        }
+
+        foreach ($filterPhones as $filterPhone) {
+            if ($phone === trim((string)$filterPhone)) {
                 return true;
             }
         }
