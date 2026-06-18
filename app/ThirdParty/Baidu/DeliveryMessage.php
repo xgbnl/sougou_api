@@ -6,6 +6,7 @@ use App\Enums\AccountChannel;
 use App\Enums\Toggle;
 use App\Models\Account;
 use App\Models\MarketingLead;
+use App\UseCases\Interactor\FormFilterInteractor;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
@@ -41,7 +42,10 @@ readonly final class DeliveryMessage
             return true;
         }
 
-        if ($this->shouldSkip((string)($message['username'] ?? ''))) {
+        /** @var FormFilterInteractor $formFilterInteractor */
+        $formFilterInteractor = app(FormFilterInteractor::class);
+
+        if ($formFilterInteractor->shouldSkipName((string)($message['username'] ?? ''))) {
             Log::info('百度线索推送命中过滤词，跳过入库', [
                 'clue_id' => $clueId,
                 'username' => $message['username'] ?? '',
@@ -50,7 +54,7 @@ readonly final class DeliveryMessage
             return true;
         }
 
-        if ($this->shouldSkipPhone((string)($message['phone'] ?? ''))) {
+        if ($formFilterInteractor->shouldSkipPhone((string)($message['phone'] ?? ''))) {
             Log::info('百度线索推送命中过滤手机号，跳过入库', [
                 'clue_id' => $clueId,
                 'phone' => $message['phone'] ?? '',
@@ -98,43 +102,6 @@ readonly final class DeliveryMessage
         return $configuredSign !== ''
             && isset($message['sign'])
             && hash_equals($configuredSign, (string)$message['sign']);
-    }
-
-    private function shouldSkip(string $username): bool
-    {
-        $filterWords = config('openapi.filter_words', config('openapi.filter_keywords', []));
-
-        if (!is_array($filterWords) || $username === '') {
-            return false;
-        }
-
-        foreach ($filterWords as $word) {
-            $word = trim((string)$word);
-
-            if ($word !== '' && str_contains($username, $word)) {
-                return true;
-            }
-        }
-
-        return false;
-    }
-
-    private function shouldSkipPhone(string $phone): bool
-    {
-        $filterPhones = config('openapi.filter_phone', []);
-        $phone = trim($phone);
-
-        if (!is_array($filterPhones) || $phone === '') {
-            return false;
-        }
-
-        foreach ($filterPhones as $filterPhone) {
-            if ($phone === trim((string)$filterPhone)) {
-                return true;
-            }
-        }
-
-        return false;
     }
 
     private function enabledAccounts(): Collection

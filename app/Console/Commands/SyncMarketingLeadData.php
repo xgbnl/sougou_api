@@ -7,6 +7,7 @@ use App\Enums\Toggle;
 use App\Models\Account;
 use App\Models\MarketingLead;
 use App\ThirdParty\Openapi;
+use App\UseCases\Interactor\FormFilterInteractor;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
@@ -213,6 +214,8 @@ class SyncMarketingLeadData extends Command
         }
 
         $rows = [];
+        /** @var FormFilterInteractor $formFilterInteractor */
+        $formFilterInteractor = app(FormFilterInteractor::class);
 
         foreach ($list as $lead) {
             $leadId = (string)($lead['id'] ?? '');
@@ -220,7 +223,7 @@ class SyncMarketingLeadData extends Command
                 continue;
             }
 
-            if ($this->shouldSkip((string)($lead['customer_name'] ?? ''))) {
+            if ($formFilterInteractor->shouldSkipName((string)($lead['customer_name'] ?? ''))) {
                 Log::info('推广线索命中过滤词，跳过入库', [
                     'account_id' => $accountId,
                     'clue_id' => $leadId,
@@ -230,7 +233,7 @@ class SyncMarketingLeadData extends Command
                 continue;
             }
 
-            if ($this->shouldSkipPhone((string)($lead['customer_tel'] ?? ''))) {
+            if ($formFilterInteractor->shouldSkipPhone((string)($lead['customer_tel'] ?? ''))) {
                 Log::info('推广线索命中过滤手机号，跳过入库', [
                     'account_id' => $accountId,
                     'clue_id' => $leadId,
@@ -266,43 +269,6 @@ class SyncMarketingLeadData extends Command
 
             return 0;
         }
-    }
-
-    private function shouldSkip(string $customerName): bool
-    {
-        $filterWords = config('openapi.filter_words', config('openapi.filter_keywords', []));
-
-        if (!is_array($filterWords) || $customerName === '') {
-            return false;
-        }
-
-        foreach ($filterWords as $word) {
-            $word = trim((string)$word);
-
-            if ($word !== '' && str_contains($customerName, $word)) {
-                return true;
-            }
-        }
-
-        return false;
-    }
-
-    private function shouldSkipPhone(string $phone): bool
-    {
-        $filterPhones = config('openapi.filter_phone', []);
-        $phone = trim($phone);
-
-        if (!is_array($filterPhones) || $phone === '') {
-            return false;
-        }
-
-        foreach ($filterPhones as $filterPhone) {
-            if ($phone === trim((string)$filterPhone)) {
-                return true;
-            }
-        }
-
-        return false;
     }
 
     private function nextOwnerId(array $ownerIds, int &$ownerCursor): ?int
