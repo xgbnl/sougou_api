@@ -156,6 +156,26 @@ readonly final class UserInteractor
     }
 
     /**
+     * 清空用户名下线索
+     * @param int $userId
+     * @return void
+     */
+    public function clearUserMarketingLeads(int $userId): void
+    {
+        $user = User::query()->find($userId);
+
+        if (empty($user)) {
+            throw new ModelNotFoundException('用户不存在');
+        }
+
+        MarketingLead::query()
+            ->where('owner_id', $userId)
+            ->update([
+                'owner_id' => null,
+            ]);
+    }
+
+    /**
      * 重置密码
      * @param int $id
      * @param string $password

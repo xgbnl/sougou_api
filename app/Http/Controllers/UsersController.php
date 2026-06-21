@@ -102,4 +102,16 @@ readonly final class UsersController
 
         return '分配成功';
     }
+
+    /**
+     * 清空用户名下线索
+     * @param int $id
+     * @return string
+     */
+    public function clearMarketingLeads(int $id): string
+    {
+        $this->useCase->clearUserMarketingLeads($id);
+
+        return '清空成功';
+    }
 }

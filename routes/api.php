@@ -25,6 +25,7 @@ Route::middleware('auth:sanctum')->group(function (): void {
     Route::apiResource('users', UsersController::class)->only(['index', 'store', 'update', 'destroy']);
     Route::get('users/{id}/accounts', [UsersController::class, 'accounts'])->where(['id' => '[0-9]+']);
     Route::patch('users/{id}/accounts', [UsersController::class, 'syncAccounts'])->where(['id' => '[0-9]+']);
+    Route::patch('users/{id}/marketing-leads/clear', [UsersController::class, 'clearMarketingLeads'])->where(['id' => '[0-9]+']);
     // 账户管理
     Route::apiResource('accounts', AccountsController::class)->only(['index', 'store', 'update']);
     // 表单过滤
