@@ -16,11 +16,6 @@ readonly final class DeliveryMessage
 {
     public function handle(array $message): bool
     {
-        if ($message['username'] === '季兆景') {
-            Log::info('百度推广线索', $message);
-
-            return true;
-        }
 
         if (!$this->passesSign($message)) {
             Log::warning('百度线索推送签名校验失败', [
