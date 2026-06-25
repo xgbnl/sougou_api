@@ -16,6 +16,7 @@ readonly final class DeliveryMessage
 {
     public function handle(array $message): bool
     {
+        Log::info('百度推广线索', $message);
         if (!$this->passesSign($message)) {
             Log::warning('百度线索推送签名校验失败', [
                 'clue_id' => $message['clueId'] ?? null,
