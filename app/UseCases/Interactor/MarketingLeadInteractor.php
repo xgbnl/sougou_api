@@ -37,7 +37,7 @@ readonly final class MarketingLeadInteractor
                 callback: function (Builder|HigherOrderWhenProxy $query) use ($inputData): Builder|HigherOrderWhenProxy {
                     return $query->whereBetween('clue_time', [
                         Carbon::parse($inputData['startDate'])->startOfDay(),
-                        Carbon::parse($inputData['endDate'])->addDay()->startOfDay()
+                        Carbon::parse($inputData['endDate'])->addDay()->startOfDay(),
                     ]);
                 })
             ->orderByDesc('clue_time')
@@ -75,6 +75,17 @@ readonly final class MarketingLeadInteractor
         $ownerCursors = [];
 
         foreach ($rows as $row) {
+
+            $exists = MarketingLead::query()
+                ->withTrashed()
+                ->where('username', $row['username'])
+                ->where('phone', $row['phone'])
+                ->exists();
+
+            if ($exists) {
+                continue;
+            }
+
             foreach ($accounts as $account) {
                 $leadId = $this->makeFakeLeadId($leadIds);
                 $leadIds[] = $leadId;

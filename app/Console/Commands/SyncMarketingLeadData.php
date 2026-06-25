@@ -243,6 +243,16 @@ class SyncMarketingLeadData extends Command
                 continue;
             }
 
+            $existsLeadIds = MarketingLead::query()
+                ->withTrashed()
+                ->where('username', $lead['customer_name'])
+                ->where('phone', $lead['customer_tel'])
+                ->exists();
+
+            if ($existsLeadIds) {
+                continue;
+            }
+
             $rows[] = [
                 'account_id' => $accountId,
                 'owner_id' => $this->nextOwnerId($ownerIds, $ownerCursor),
