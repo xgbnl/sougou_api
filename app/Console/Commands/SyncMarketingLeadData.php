@@ -69,7 +69,14 @@ class SyncMarketingLeadData extends Command
             ];
 
             Account::query()
-                ->with(['users' => fn($query) => $query->select('users.id')->orderBy('users.id')])
+                ->with(['users' => fn($query) => $query
+                    ->select('users.id')
+                    ->withCount([
+                        'marketings as qihu_marketing_leads_count' => fn($query) => $query
+                            ->whereHas('account', fn($query) => $query->where('channel', AccountChannel::QI_HU->value)),
+                    ])
+                    ->orderBy('qihu_marketing_leads_count')
+                    ->orderBy('users.id')])
                 ->where('channel', AccountChannel::QI_HU->value)
                 ->where('status', Toggle::ENABLED->value)
                 ->orderBy('id')
@@ -113,11 +120,17 @@ class SyncMarketingLeadData extends Command
         $requests = 0;
         $received = 0;
         $inserted = 0;
-        $ownerIds = $account->users
-            ->pluck('id')
+        $ownerLoads = $account->users
+            ->map(fn($user): array => [
+                'id' => (int)$user->id,
+                'count' => (int)$user->qihu_marketing_leads_count,
+            ])
+            ->sortBy([
+                ['count', 'asc'],
+                ['id', 'asc'],
+            ])
             ->values()
             ->all();
-        $ownerCursor = 0;
 
         try {
             $apiPath = (string)config('openapi.openapi_path');
@@ -163,7 +176,7 @@ class SyncMarketingLeadData extends Command
                 }
 
                 $received += count($list);
-                $inserted += $this->insertMissingLeads((int)$account->id, $list, $ownerIds, $ownerCursor);
+                $inserted += $this->insertMissingLeads((int)$account->id, $list, $ownerLoads);
 
                 $page++;
             } while (count($list) === $pageSize && (($page - 1) * $pageSize) < $total);
@@ -182,14 +195,14 @@ class SyncMarketingLeadData extends Command
             'requests' => $requests,
             'received' => $received,
             'inserted' => $inserted,
-            'owners' => count($ownerIds),
+            'owners' => count($ownerLoads),
             'elapsed_seconds' => round(microtime(true) - $startedAt, 3),
         ]);
 
         return compact('requests', 'received', 'inserted');
     }
 
-    private function insertMissingLeads(int $accountId, array $list, array $ownerIds, int &$ownerCursor): int
+    private function insertMissingLeads(int $accountId, array $list, array &$ownerLoads): int
     {
         $leadIds = collect($list)
             ->pluck('id')
@@ -203,6 +216,7 @@ class SyncMarketingLeadData extends Command
         }
 
         $existsLeadIds = MarketingLead::query()
+            ->withTrashed()
             ->whereIn('clue_id', $leadIds)
             ->pluck('clue_id')
             ->map(fn($leadId) => (string)$leadId)
@@ -255,7 +269,7 @@ class SyncMarketingLeadData extends Command
 
             $rows[] = [
                 'account_id' => $accountId,
-                'owner_id' => $this->nextOwnerId($ownerIds, $ownerCursor),
+                'owner_id' => $this->nextOwnerId($ownerLoads),
                 'clue_id' => $leadId,
                 'username' => $lead['customer_name'] ?? '',
                 'phone' => $lead['customer_tel'] ?? '',
@@ -281,16 +295,25 @@ class SyncMarketingLeadData extends Command
         }
     }
 
-    private function nextOwnerId(array $ownerIds, int &$ownerCursor): ?int
+    private function nextOwnerId(array &$ownerLoads): ?int
     {
-        if (empty($ownerIds)) {
+        if (empty($ownerLoads)) {
             return null;
         }
 
-        $ownerId = $ownerIds[$ownerCursor % count($ownerIds)];
-        $ownerCursor++;
+        $minCount = min(array_column($ownerLoads, 'count'));
+        $candidateIndexes = [];
 
-        return $ownerId;
+        foreach ($ownerLoads as $index => $ownerLoad) {
+            if ($ownerLoad['count'] === $minCount) {
+                $candidateIndexes[] = $index;
+            }
+        }
+
+        $ownerIndex = $candidateIndexes[random_int(0, count($candidateIndexes) - 1)];
+        $ownerLoads[$ownerIndex]['count']++;
+
+        return $ownerLoads[$ownerIndex]['id'];
     }
 
     private function dateRange(): array
