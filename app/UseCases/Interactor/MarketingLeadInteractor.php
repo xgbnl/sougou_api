@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\UseCases\Interactor;
 
+use App\Enums\AccountChannel;
 use App\Enums\Toggle;
 use App\Models\Account;
 use App\Models\MarketingLead;
@@ -12,6 +13,7 @@ use App\UseCases\Contracts\LengthAwareOutPut;
 use App\UseCases\Contracts\OutPutPort;
 use App\UseCases\Exceptions\UseCaseException;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Carbon;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\UploadedFile;
@@ -80,6 +82,9 @@ readonly final class MarketingLeadInteractor
                 ->withTrashed()
                 ->where('username', $row['username'])
                 ->where('phone', $row['phone'])
+                ->whereHas('account', function (Builder|BelongsTo $query) {
+                    return $query->where('channel', AccountChannel::QI_HU->value);
+                })
                 ->exists();
 
             if ($exists) {
