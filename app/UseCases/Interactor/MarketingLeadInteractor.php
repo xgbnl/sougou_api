@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\UseCases\Interactor;
 
-use App\Enums\AccountChannel;
 use App\Enums\Toggle;
 use App\Models\Account;
 use App\Models\MarketingLead;
@@ -13,7 +12,6 @@ use App\UseCases\Contracts\LengthAwareOutPut;
 use App\UseCases\Contracts\OutPutPort;
 use App\UseCases\Exceptions\UseCaseException;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Carbon;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\UploadedFile;
@@ -73,8 +71,9 @@ readonly final class MarketingLeadInteractor
         $now = now();
         $insertRows = [];
         $leadIds = [];
-
-        $ownerCursors = [];
+        $pendingRows = [];
+        /** @var MarketingLeadOwnerAllocator $ownerAllocator */
+        $ownerAllocator = app(MarketingLeadOwnerAllocator::class);
 
         foreach ($rows as $row) {
 
@@ -82,41 +81,35 @@ readonly final class MarketingLeadInteractor
                 ->withTrashed()
                 ->where('username', $row['username'])
                 ->where('phone', $row['phone'])
-                ->whereHas('account', function (Builder|BelongsTo $query) {
-                    return $query->where('channel', AccountChannel::QI_HU->value);
-                })
                 ->exists();
 
             if ($exists) {
                 continue;
             }
 
-            foreach ($accounts as $account) {
-                $leadId = $this->makeFakeLeadId($leadIds);
-                $leadIds[] = $leadId;
-                $accountId = (int)$account->id;
-                $ownerIds = $account->users
-                    ->pluck('id')
-                    ->map(fn($id) => (int)$id)
-                    ->values()
-                    ->all();
-                $ownerCursors[$accountId] ??= 0;
+            $pendingRows[] = $row;
+        }
 
-                $insertRows[] = [
-                    'account_id' => $accountId,
-                    'owner_id' => $this->nextOwnerId($ownerIds, $ownerCursors[$accountId]),
-                    'clue_id' => (string)$leadId,
-                    'username' => $row['username'],
-                    'phone' => $row['phone'],
-                    'keyword' => $row['keyword'],
-                    'search_word' => $row['search_word'],
-                    'clue_time' => date('Y-m-d H:i:s'),
-                    'site_name' => '',
-                    'is_faker' => 1,
-                    'created_at' => $now,
-                    'updated_at' => $now,
-                ];
-            }
+        $owners = $ownerAllocator->nextManyForBaidu($accounts, count($pendingRows));
+
+        foreach ($pendingRows as $index => $row) {
+            $leadId = $this->makeFakeLeadId($leadIds);
+            $leadIds[] = $leadId;
+
+            $insertRows[] = [
+                'account_id' => $owners[$index]['account_id'] ?? $accounts->first()->id,
+                'owner_id' => $owners[$index]['user_id'] ?? null,
+                'clue_id' => (string)$leadId,
+                'username' => $row['username'],
+                'phone' => $row['phone'],
+                'keyword' => $row['keyword'],
+                'search_word' => $row['search_word'],
+                'clue_time' => date('Y-m-d H:i:s'),
+                'site_name' => '',
+                'is_faker' => 1,
+                'created_at' => $now,
+                'updated_at' => $now,
+            ];
         }
 
         foreach (array_chunk($insertRows, 500) as $chunk) {
@@ -274,23 +267,11 @@ readonly final class MarketingLeadInteractor
         return $rows;
     }
 
-    private function nextOwnerId(array $ownerIds, int &$ownerCursor): ?int
-    {
-        if (empty($ownerIds)) {
-            return null;
-        }
-
-        $ownerId = $ownerIds[$ownerCursor % count($ownerIds)];
-        $ownerCursor++;
-
-        return $ownerId;
-    }
-
     private function makeFakeLeadId(array $except = []): int
     {
         do {
             $leadId = random_int(3000000000, 4294967295);
-        } while (in_array($leadId, $except, true) || MarketingLead::query()->where('clue_id', (string)$leadId)->exists());
+        } while (in_array($leadId, $except, true) || MarketingLead::query()->withTrashed()->where('clue_id', (string)$leadId)->exists());
 
         return $leadId;
     }

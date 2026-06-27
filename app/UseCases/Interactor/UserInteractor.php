@@ -228,6 +228,7 @@ readonly final class UserInteractor
             MarketingLead::query()
                 ->where('owner_id', $id)
                 ->update(['owner_id' => null]);
+            app(MarketingLeadOwnerAllocator::class)->forgetUser($id);
             $user->delete();
 
             DB::commit();

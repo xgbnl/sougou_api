@@ -7,8 +7,8 @@ use App\Enums\Toggle;
 use App\Models\Account;
 use App\Models\MarketingLead;
 use App\UseCases\Interactor\FormFilterInteractor;
+use App\UseCases\Interactor\MarketingLeadOwnerAllocator;
 use Illuminate\Support\Collection;
-use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 use Throwable;
 
@@ -39,7 +39,7 @@ readonly final class DeliveryMessage
             return false;
         }
 
-        if (MarketingLead::query()->where('clue_id', $clueId)->exists()) {
+        if (MarketingLead::query()->withTrashed()->where('clue_id', $clueId)->exists()) {
             return true;
         }
 
@@ -64,16 +64,15 @@ readonly final class DeliveryMessage
             return true;
         }
 
-        $account = $this->nextAccount($accounts);
-        $ownerIds = $account->users
-            ->pluck('id')
-            ->values()
-            ->all();
+        /** @var MarketingLeadOwnerAllocator $ownerAllocator */
+        $ownerAllocator = app(MarketingLeadOwnerAllocator::class);
+        $owner = $ownerAllocator->nextForBaidu($accounts);
+        $account = $owner['account_id'] ?? $accounts->first()->id;
 
         try {
             MarketingLead::query()->create([
-                'account_id' => $account->id,
-                'owner_id' => $this->nextOwnerId((int)$account->id, $ownerIds),
+                'account_id' => $account,
+                'owner_id' => $owner['user_id'] ?? null,
                 'clue_id' => $clueId,
                 'username' => $message['username'] ?? '',
                 'phone' => $message['phone'] ?? '',
@@ -88,7 +87,7 @@ readonly final class DeliveryMessage
         } catch (Throwable $e) {
             Log::error('百度线索推送入库失败', [
                 'clue_id' => $clueId,
-                'account_id' => $account->id,
+                'account_id' => $account,
                 'message' => $e->getMessage(),
             ]);
 
@@ -115,36 +114,4 @@ readonly final class DeliveryMessage
             ->get();
     }
 
-    private function nextAccount(Collection $accounts): Account
-    {
-        $cursor = $this->nextCursor('baidu-delivery-account-cursor');
-
-        return $accounts->values()->get($cursor % $accounts->count(), $accounts->first());
-    }
-
-    private function nextOwnerId(int $accountId, array $ownerIds): ?int
-    {
-        if (empty($ownerIds)) {
-            return null;
-        }
-
-        $cursor = $this->nextCursor("baidu-delivery-account-{$accountId}-owner-cursor");
-
-        return $ownerIds[$cursor % count($ownerIds)];
-    }
-
-    private function nextCursor(string $key): int
-    {
-        Cache::add($key, 0);
-
-        $cursor = Cache::increment($key);
-
-        if (!is_int($cursor) || $cursor < 1) {
-            Cache::put($key, 1);
-
-            return 0;
-        }
-
-        return $cursor - 1;
-    }
 }

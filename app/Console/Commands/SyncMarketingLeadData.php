@@ -8,6 +8,7 @@ use App\Models\Account;
 use App\Models\MarketingLead;
 use App\ThirdParty\Openapi;
 use App\UseCases\Interactor\FormFilterInteractor;
+use App\UseCases\Interactor\MarketingLeadOwnerAllocator;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
@@ -69,14 +70,7 @@ class SyncMarketingLeadData extends Command
             ];
 
             Account::query()
-                ->with(['users' => fn($query) => $query
-                    ->select('users.id')
-                    ->withCount([
-                        'marketings as qihu_marketing_leads_count' => fn($query) => $query
-                            ->whereHas('account', fn($query) => $query->where('channel', AccountChannel::QI_HU->value)),
-                    ])
-                    ->orderBy('qihu_marketing_leads_count')
-                    ->orderBy('users.id')])
+                ->with(['users' => fn($query) => $query->select('users.id')->orderBy('users.id')])
                 ->where('channel', AccountChannel::QI_HU->value)
                 ->where('status', Toggle::ENABLED->value)
                 ->orderBy('id')
@@ -120,17 +114,6 @@ class SyncMarketingLeadData extends Command
         $requests = 0;
         $received = 0;
         $inserted = 0;
-        $ownerLoads = $account->users
-            ->map(fn($user): array => [
-                'id' => (int)$user->id,
-                'count' => (int)$user->qihu_marketing_leads_count,
-            ])
-            ->sortBy([
-                ['count', 'asc'],
-                ['id', 'asc'],
-            ])
-            ->values()
-            ->all();
 
         try {
             $apiPath = (string)config('openapi.openapi_path');
@@ -176,7 +159,7 @@ class SyncMarketingLeadData extends Command
                 }
 
                 $received += count($list);
-                $inserted += $this->insertMissingLeads((int)$account->id, $list, $ownerLoads);
+                $inserted += $this->insertMissingLeads($account, $list);
 
                 $page++;
             } while (count($list) === $pageSize && (($page - 1) * $pageSize) < $total);
@@ -195,14 +178,14 @@ class SyncMarketingLeadData extends Command
             'requests' => $requests,
             'received' => $received,
             'inserted' => $inserted,
-            'owners' => count($ownerLoads),
+            'owners' => $account->users->count(),
             'elapsed_seconds' => round(microtime(true) - $startedAt, 3),
         ]);
 
         return compact('requests', 'received', 'inserted');
     }
 
-    private function insertMissingLeads(int $accountId, array $list, array &$ownerLoads): int
+    private function insertMissingLeads(Account $account, array $list): int
     {
         $leadIds = collect($list)
             ->pluck('id')
@@ -227,9 +210,11 @@ class SyncMarketingLeadData extends Command
             return 0;
         }
 
-        $rows = [];
+        $pendingRows = [];
         /** @var FormFilterInteractor $formFilterInteractor */
         $formFilterInteractor = app(FormFilterInteractor::class);
+        /** @var MarketingLeadOwnerAllocator $ownerAllocator */
+        $ownerAllocator = app(MarketingLeadOwnerAllocator::class);
 
         foreach ($list as $lead) {
             $leadId = (string)($lead['id'] ?? '');
@@ -239,7 +224,7 @@ class SyncMarketingLeadData extends Command
 
             if ($formFilterInteractor->shouldSkipName((string)($lead['customer_name'] ?? ''))) {
                 Log::info('推广线索命中过滤词，跳过入库', [
-                    'account_id' => $accountId,
+                    'account_id' => $account->id,
                     'clue_id' => $leadId,
                     'customer_name' => $lead['customer_name'] ?? '',
                 ]);
@@ -249,7 +234,7 @@ class SyncMarketingLeadData extends Command
 
             if ($formFilterInteractor->shouldSkipPhone((string)($lead['customer_tel'] ?? ''))) {
                 Log::info('推广线索命中过滤手机号，跳过入库', [
-                    'account_id' => $accountId,
+                    'account_id' => $account->id,
                     'clue_id' => $leadId,
                     'customer_tel' => $lead['customer_tel'] ?? '',
                 ]);
@@ -267,9 +252,7 @@ class SyncMarketingLeadData extends Command
                 continue;
             }
 
-            $rows[] = [
-                'account_id' => $accountId,
-                'owner_id' => $this->nextOwnerId($ownerLoads),
+            $pendingRows[] = [
                 'clue_id' => $leadId,
                 'username' => $lead['customer_name'] ?? '',
                 'phone' => $lead['customer_tel'] ?? '',
@@ -280,6 +263,16 @@ class SyncMarketingLeadData extends Command
                 'created_at' => date('Y-m-d H:i:s'),
                 'updated_at' => date('Y-m-d H:i:s'),
             ];
+        }
+
+        $owners = $ownerAllocator->nextManyForQihuAccount((int)$account->id, $account->users, count($pendingRows));
+        $rows = [];
+
+        foreach ($pendingRows as $index => $pendingRow) {
+            $rows[] = [
+                'account_id' => $account->id,
+                'owner_id' => $owners[$index]['user_id'] ?? null,
+            ] + $pendingRow;
         }
 
         if (empty($rows)) {
@@ -293,27 +286,6 @@ class SyncMarketingLeadData extends Command
 
             return 0;
         }
-    }
-
-    private function nextOwnerId(array &$ownerLoads): ?int
-    {
-        if (empty($ownerLoads)) {
-            return null;
-        }
-
-        $minCount = min(array_column($ownerLoads, 'count'));
-        $candidateIndexes = [];
-
-        foreach ($ownerLoads as $index => $ownerLoad) {
-            if ($ownerLoad['count'] === $minCount) {
-                $candidateIndexes[] = $index;
-            }
-        }
-
-        $ownerIndex = $candidateIndexes[random_int(0, count($candidateIndexes) - 1)];
-        $ownerLoads[$ownerIndex]['count']++;
-
-        return $ownerLoads[$ownerIndex]['id'];
     }
 
     private function dateRange(): array
