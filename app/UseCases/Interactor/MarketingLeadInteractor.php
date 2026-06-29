@@ -15,6 +15,7 @@ use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Support\Carbon;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Collection;
 use Illuminate\Support\HigherOrderWhenProxy;
 use Vtiful\Kernel\Excel;
 
@@ -56,6 +57,7 @@ readonly final class MarketingLeadInteractor
             ->where('status', Toggle::ENABLED->value)
             ->whereIn('id', $accountIds)
             ->with(['users' => fn($query) => $query->select('users.id')->orderBy('users.id')])
+            ->orderBy('id')
             ->get();
 
         if ($accounts->isEmpty()) {
@@ -72,8 +74,6 @@ readonly final class MarketingLeadInteractor
         $insertRows = [];
         $leadIds = [];
         $pendingRows = [];
-        /** @var MarketingLeadOwnerAllocator $ownerAllocator */
-        $ownerAllocator = app(MarketingLeadOwnerAllocator::class);
 
         foreach ($rows as $row) {
 
@@ -90,7 +90,11 @@ readonly final class MarketingLeadInteractor
             $pendingRows[] = $row;
         }
 
-        $owners = $ownerAllocator->nextManyForBaidu($accounts, count($pendingRows));
+        $owners = $this->importAssignments($accounts, count($pendingRows));
+
+        if (!empty($pendingRows) && $owners->isEmpty()) {
+            throw new UseCaseException('所选线索账户没有关联可分配用户');
+        }
 
         foreach ($pendingRows as $index => $row) {
             $leadId = $this->makeFakeLeadId($leadIds);
@@ -265,6 +269,55 @@ readonly final class MarketingLeadInteractor
         }
 
         return $rows;
+    }
+
+    private function importAssignments(Collection $accounts, int $quantity): Collection
+    {
+        if ($quantity < 1) {
+            return collect();
+        }
+
+        $candidates = $accounts
+            ->flatMap(fn($account) => $account->users->map(fn($user): array => [
+                'user_id' => (int)$user->id,
+                'account_id' => (int)$account->id,
+            ]))
+            ->sortBy([
+                ['user_id', 'asc'],
+                ['account_id', 'asc'],
+            ])
+            ->unique('user_id')
+            ->values();
+
+        if ($candidates->isEmpty()) {
+            return collect();
+        }
+
+        $ownerIds = $candidates
+            ->pluck('user_id')
+            ->values()
+            ->all();
+        $todayCounts = MarketingLead::query()
+            ->selectRaw('owner_id, count(*) as total')
+            ->whereIn('owner_id', $ownerIds)
+            ->whereBetween('clue_time', [Carbon::today()->startOfDay(), Carbon::today()->endOfDay()])
+            ->groupBy('owner_id')
+            ->pluck('total', 'owner_id');
+
+        $rankedCandidates = $candidates
+            ->map(fn(array $candidate): array => [
+                'user_id' => $candidate['user_id'],
+                'account_id' => $candidate['account_id'],
+                'today_count' => (int)($todayCounts[$candidate['user_id']] ?? 0),
+            ])
+            ->sortBy([
+                ['today_count', 'asc'],
+                ['user_id', 'asc'],
+            ])
+            ->values();
+
+        return collect(range(0, $quantity - 1))
+            ->map(fn(int $index): array => $rankedCandidates[$index % $rankedCandidates->count()]);
     }
 
     private function makeFakeLeadId(array $except = []): int

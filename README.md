@@ -222,6 +222,15 @@ BAIDU_CLUE_DELIVERY_SIGN=固定签名
 - `DELETE /api/marketing-leads/{id}`：删除线索。
 - `GET /api/dashboard/marketing-leads/stats`：Dashboard 统计。
 
+导入分配规则：
+
+- 前端传入 `accountIds` 和 Excel 文件。
+- 后端先筛掉已存在的相同 `username + phone` 线索。
+- 通过所选启用账户反查关联用户，按 `user_id` 去重；同一用户关联多个所选账户时，只参与一次分配，并使用其关联的最小 `account_id` 落库。
+- 按用户当天已有线索数从低到高排序，数量相同再按 `user_id` 从小到大排序。
+- Excel 每一行只生成一条 `marketing_leads`，按排序后的用户列表依次一对一分配，不再按账户数量复制多条。
+- 后续调整导入分配时，优先查找 `MarketingLeadInteractor::importAssignments`。
+
 权限：
 
 - admin 可查看全部线索，并可导入、删除。
