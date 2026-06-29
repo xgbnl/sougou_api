@@ -39,7 +39,7 @@ readonly final class DeliveryMessage
             return false;
         }
 
-        if (MarketingLead::query()->withTrashed()->where('clue_id', $clueId)->exists()) {
+        if (MarketingLead::query()->where('clue_id', $clueId)->exists()) {
             return true;
         }
 

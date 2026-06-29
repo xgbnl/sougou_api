@@ -148,9 +148,10 @@ php artisan app:sync-marketing-lead-data --start-date=2026-06-01 --end-date=2026
 1. 查询 `channel = qihu` 且 `status = enabled` 的账户。
 2. 调用 `App\ThirdParty\Openapi` 拉取线索。
 3. 按账户关联用户轮询分配 `owner_id`。
-4. 根据 `clue_id` 去重。
-5. 调用 `FormFilterInteractor` 判断客户姓名和手机号是否需要过滤。
-6. 入库到 `marketing_leads`。
+4. 根据 `clue_id` 去重，包含软删除记录，但只判断 360 渠道账户下的线索。
+5. 再按 `username + phone` 去重，包含软删除记录，但只判断 360 渠道账户下的线索。
+6. 调用 `FormFilterInteractor` 判断客户姓名和手机号是否需要过滤。
+7. 入库到 `marketing_leads`。
 
 字段映射：
 
@@ -190,7 +191,7 @@ BAIDU_CLUE_DELIVERY_SIGN=固定签名
 1. 校验消息中的 `sign` 是否等于配置中的签名。
 2. 校验 `clueId` 是否存在。
 3. 查询 `channel = baidu` 且 `status = enabled` 的账户。
-4. 如果 `clue_id` 已存在，直接返回成功。
+4. 如果未删除记录中 `clue_id` 已存在，直接返回成功；软删除记录不参与该重复判断。
 5. 调用 `FormFilterInteractor` 判断 `username` 和 `phone` 是否过滤。
 6. 按缓存 cursor 轮询分配百度账户。
 7. 按账户关联用户轮询分配 `owner_id`。
@@ -225,7 +226,7 @@ BAIDU_CLUE_DELIVERY_SIGN=固定签名
 导入分配规则：
 
 - 前端传入 `accountIds` 和 Excel 文件。
-- 后端先筛掉已存在的相同 `username + phone` 线索。
+- 后端先筛掉未删除记录中已存在的相同 `username + phone` 线索；软删除记录不参与该重复判断。
 - 通过所选启用账户反查关联用户，按 `user_id` 去重；同一用户关联多个所选账户时，只参与一次分配，并使用其关联的最小 `account_id` 落库。
 - 按用户当天已有线索数从低到高排序，数量相同再按 `user_id` 从小到大排序。
 - Excel 每一行只生成一条 `marketing_leads`，按排序后的用户列表依次一对一分配，不再按账户数量复制多条。

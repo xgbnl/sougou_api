@@ -9,6 +9,8 @@ use App\Models\MarketingLead;
 use App\ThirdParty\Openapi;
 use App\UseCases\Interactor\FormFilterInteractor;
 use App\UseCases\Interactor\MarketingLeadOwnerAllocator;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
@@ -201,6 +203,9 @@ class SyncMarketingLeadData extends Command
         $existsLeadIds = MarketingLead::query()
             ->withTrashed()
             ->whereIn('clue_id', $leadIds)
+            ->whereHas('account', function (Builder|BelongsTo $query) {
+                return $query->where('channel', AccountChannel::QI_HU->value);
+            })
             ->pluck('clue_id')
             ->map(fn($leadId) => (string)$leadId)
             ->all();
@@ -246,6 +251,9 @@ class SyncMarketingLeadData extends Command
                 ->withTrashed()
                 ->where('username', $lead['customer_name'])
                 ->where('phone', $lead['customer_tel'])
+                ->whereHas('account', function (Builder|BelongsTo $query) {
+                    return $query->where('channel', AccountChannel::QI_HU->value);
+                })
                 ->exists();
 
             if ($existsLeadIds) {

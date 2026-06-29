@@ -78,7 +78,6 @@ readonly final class MarketingLeadInteractor
         foreach ($rows as $row) {
 
             $exists = MarketingLead::query()
-                ->withTrashed()
                 ->where('username', $row['username'])
                 ->where('phone', $row['phone'])
                 ->exists();
