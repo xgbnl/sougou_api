@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Enums\AccountChannel;
 use App\Enums\Toggle;
 use App\Models\Account;
 use App\Models\MarketingLead;
@@ -36,54 +37,46 @@ readonly final class LandingLeadController
         ]);
     }
 
-    public function submit(Request $request): string|JsonResponse
+    public function submit(Request $request): string
     {
-        try {
-            $this->ensureAllowedSource($request);
-            $this->ensureCleanHoneypot($request);
+        $this->ensureAllowedSource($request);
+        $this->ensureCleanHoneypot($request);
 
-            $name = trim((string)$request->input('name', $request->input('data.xingming', '')));
-            $phone = trim((string)$request->input('phone', $request->input('data.dianhua', '')));
+        $name = trim((string)$request->input('name', $request->input('data.xingming', '')));
+        $phone = trim((string)$request->input('phone', $request->input('data.dianhua', '')));
 
-            $this->ensureValidPayload($name, $phone);
-            $this->ensureRateLimit($request, $phone);
-            $this->ensureValidToken($request);
+        $this->ensureValidPayload($name, $phone);
+        $this->ensureRateLimit($request, $phone);
+        $this->ensureValidToken($request);
 
-            if (MarketingLead::query()->where('username', $name)->where('phone', $phone)->exists()) {
-                throw new UseCaseException('请勿重复提交', 422);
-            }
-
-            $accounts = $this->enabledAccounts();
-            if ($accounts->isEmpty()) {
-                throw new UseCaseException('提交失败，请稍后重试', 500);
-            }
-
-            $owner = $this->nextOwner($accounts);
-            if (empty($owner)) {
-                throw new UseCaseException('提交失败，请稍后重试', 500);
-            }
-
-            MarketingLead::query()->create([
-                'account_id' => $owner['account_id'],
-                'owner_id' => $owner['user_id'],
-                'clue_id' => $this->leadId(),
-                'username' => $name,
-                'phone' => $phone,
-                'keyword' => (string)$request->input('keyword', $request->input('data.lailu', '')),
-                'search_word' => (string)$request->input('search_word', ''),
-                'clue_time' => now(),
-                'site_name' => 'ff-promo',
-                'is_faker' => false,
-            ]);
-
-            return '提交成功';
-        } catch (UseCaseException $e) {
-            return $this->fail($request, $e->getMessage(), $e->getCode());
-        } catch (Throwable $e) {
-            report($e);
-
-            return $this->fail($request, '提交失败，请稍后重试', 500);
+        if (MarketingLead::query()->where('username', $name)->where('phone', $phone)->exists()) {
+            throw new UseCaseException('请勿重复提交', 422);
         }
+
+        $accounts = $this->enabledAccounts();
+        if ($accounts->isEmpty()) {
+            throw new UseCaseException('提交失败，请稍后重试', 500);
+        }
+
+        $owner = $this->nextOwner($accounts);
+        if (empty($owner)) {
+            throw new UseCaseException('提交失败，请稍后重试', 500);
+        }
+
+        MarketingLead::query()->create([
+            'account_id' => $owner['account_id'],
+            'owner_id' => $owner['user_id'],
+            'clue_id' => $this->leadId(),
+            'username' => $name,
+            'phone' => $phone,
+            'keyword' => (string)$request->input('keyword', $request->input('data.lailu', '')),
+            'search_word' => (string)$request->input('search_word', ''),
+            'clue_time' => now(),
+            'site_name' => 'ff-promo',
+            'is_faker' => false,
+        ]);
+
+        return '提交成功';
     }
 
     public function options(Request $request): Response
@@ -188,6 +181,7 @@ readonly final class LandingLeadController
         $accountIds = config('landing.account_ids', []);
 
         return Account::query()
+            ->where('channel', AccountChannel::SOUGOU->value)
             ->where('status', Toggle::ENABLED->value)
             ->when(!empty($accountIds), fn($query) => $query->whereIn('id', $accountIds))
             ->with(['users' => fn($query) => $query->select('users.id')->orderBy('users.id')])
@@ -304,19 +298,6 @@ readonly final class LandingLeadController
         }
 
         return $response;
-    }
-
-    private function fail(Request $request, string $message, int $status): JsonResponse
-    {
-        if ($status < 400 || $status > 599) {
-            $status = 422;
-        }
-
-        return $this->cors(response()->json([
-            'code' => $status,
-            'msg' => $message,
-            'data' => null,
-        ], $status), $request);
     }
 
     private function tokenKey(string $token): string

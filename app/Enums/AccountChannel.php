@@ -19,4 +19,7 @@ enum AccountChannel: string implements Enumerable, Presenter
 
     #[Description('百度')]
     case BAIDU = 'baidu';
+
+    #[Description('搜狗')]
+    case SOUGOU = 'sougou';
 }

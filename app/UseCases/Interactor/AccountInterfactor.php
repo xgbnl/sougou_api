@@ -27,14 +27,14 @@ readonly final class AccountInterfactor
     {
         $inputData['created_at'] = date('Y-m-d H:i:s');
 
-        if (($inputData['channel'] ?? null) === AccountChannel::BAIDU->value) {
+        if (in_array($inputData['channel'] ?? null, [AccountChannel::BAIDU->value, AccountChannel::SOUGOU->value], true)) {
             $exists = Account::query()
-                ->where('channel', AccountChannel::BAIDU->value)
+                ->where('channel', $inputData['channel'])
                 ->where('username', $inputData['username'])
                 ->exists();
 
             if ($exists) {
-                throw new UseCaseException('百度账户名已存在');
+                throw new UseCaseException('账户名已存在');
             }
         }
 

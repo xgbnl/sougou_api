@@ -232,7 +232,7 @@ BAIDU_CLUE_DELIVERY_SIGN=固定签名
 
 分配规则：
 
-- 默认查询所有启用账户；如需指定账户，配置 `LANDING_ACCOUNT_IDS=1,2,3`。
+- 默认查询所有启用的搜狗账户；如需指定搜狗账户，配置 `LANDING_ACCOUNT_IDS=1,2,3`。
 - 展开 `accounts -> users` 后按 `user_id` 去重。
 - 按用户当天已有线索数从低到高排序，数量相同按 `user_id` 从小到大排序。
 - 使用缓存保存当天分配队列，并用缓存锁避免并发提交时分配偏移。
