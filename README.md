@@ -206,6 +206,39 @@ BAIDU_CLUE_DELIVERY_SIGN=固定签名
 - `search_word` -> `search_word`
 - `clue_time` -> `clue_time`
 
+
+## 落地页线索提交
+
+公开接口路径：
+
+- `GET /api/x9/k7/t`：获取一次性 token 和算术验证码。
+- `POST /api/x9/k7/s`：提交姓名、手机号、验证码和 token，控制器成功返回 `提交成功`。
+
+相关文件：
+
+- `app/Http/Controllers/LandingLeadController.php`
+- `app/Http/Middleware/LandingCors.php`
+- `config/landing.php`
+- 落地页：`/Users/daifei/Desktop/ff-promo/index.html`
+
+安全拦截：
+
+- `LANDING_ALLOWED_ORIGINS` 限制允许提交的落地页域名，同时做 `Origin` / `Referer` 校验。
+- IP 限流：默认 60 秒 6 次。
+- 手机号限流：默认 600 秒 1 次。
+- 蜜罐字段：`website` 有值时拒绝。
+- 一次性 token：验证码接口生成 token 和算术题，提交后 token 立即失效。
+- 入库前校验未删除记录中是否存在相同 `username + phone`，存在则拒绝。
+
+分配规则：
+
+- 默认查询所有启用账户；如需指定账户，配置 `LANDING_ACCOUNT_IDS=1,2,3`。
+- 展开 `accounts -> users` 后按 `user_id` 去重。
+- 按用户当天已有线索数从低到高排序，数量相同按 `user_id` 从小到大排序。
+- 使用缓存保存当天分配队列，并用缓存锁避免并发提交时分配偏移。
+
+上线前需要把落地页里的 `LANDING_API_BASE` 改成真实 API 地址，并把该落地页域名写入后端 `LANDING_ALLOWED_ORIGINS`。
+
 ## 线索管理
 
 相关文件：

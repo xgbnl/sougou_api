@@ -4,9 +4,11 @@ use App\Http\Controllers\AccountsController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\BaiduDeliveryController;
 use App\Http\Controllers\FormFiltersController;
+use App\Http\Controllers\LandingLeadController;
 use App\Http\Controllers\MarketingLeadsController;
 use App\Http\Controllers\UsersController;
 use Illuminate\Http\Request;
+use App\Http\Middleware\LandingCors;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/user', function (Request $request) {
@@ -16,6 +18,14 @@ Route::get('/user', function (Request $request) {
 Route::post('auth/login', [AuthController::class, 'login']);
 
 Route::post('baidu/delivery',[BaiduDeliveryController::class,'handle']);
+
+
+Route::middleware(LandingCors::class)->group(function (): void {
+    Route::options('x9/k7/t', [LandingLeadController::class, 'options'])->withoutMiddleware('body.advice');
+    Route::options('x9/k7/s', [LandingLeadController::class, 'options'])->withoutMiddleware('body.advice');
+    Route::get('x9/k7/t', [LandingLeadController::class, 'token'])->withoutMiddleware('body.advice');
+    Route::post('x9/k7/s', [LandingLeadController::class, 'submit']);
+});
 
 Route::middleware('auth:sanctum')->group(function (): void {
     Route::post('auth/logout', [AuthController::class, 'logout']);
