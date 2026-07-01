@@ -122,7 +122,7 @@ readonly final class MarketingLeadInteractor
 
     public function exportMarketingLeads(User $user): string
     {
-        $headers = ['客户姓名', '客户手机号', '搜索词', '关键词'];
+        $headers = ['客户姓名', '客户手机号', '搜索词', '关键词', '线索时间'];
         $data = [];
         $tmpPath = storage_path('app/tmp');
 
@@ -142,6 +142,7 @@ readonly final class MarketingLeadInteractor
                     $lead->phone,
                     $lead->search_word,
                     $lead->keyword,
+                    Carbon::parse($lead->clue_time)->format('Y-m-d H:i:s'),
                 ];
             }
         });
