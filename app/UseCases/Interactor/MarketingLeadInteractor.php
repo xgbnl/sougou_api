@@ -133,9 +133,10 @@ readonly final class MarketingLeadInteractor
         $query = MarketingLead::query()
             ->select(['id', 'clue_time', 'username', 'phone', 'search_word', 'keyword'])
             ->when(!$user->role->isAdmin(), fn(Builder|HigherOrderWhenProxy $builder): Builder|HigherOrderWhenProxy => $this->scopeAssignedAccounts($builder, $user))
-            ->orderByDesc('clue_time');
+            ->orderByDesc('clue_time')
+            ->orderByDesc('id');
 
-        $query->chunkById(1000, function ($leads) use (&$data): void {
+        $query->chunk(1000, function ($leads) use (&$data): void {
             foreach ($leads as $lead) {
                 $data[] = [
                     $lead->username,
