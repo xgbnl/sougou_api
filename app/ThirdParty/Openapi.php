@@ -51,6 +51,7 @@ class Openapi
                 'Content-Type' => 'application/json',
                 'Authorization' => $this->authorization()
             ])
+                ->withoutVerifying()
                 ->retry(3, 1000)
                 ->timeout(10) // 秒
                 ->post($this->serverUrl.$this->apiPath, [
